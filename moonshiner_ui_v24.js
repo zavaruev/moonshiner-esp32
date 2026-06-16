@@ -1,85 +1,601 @@
 (function () {
-    /**
-     * Moonshiner UI v24 (Refactored & Robust)
-     */
-
-    // 0. Global Error Handler
     window.onerror = function (msg, url, line, col, error) {
         const div = document.createElement('div');
-        div.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; background: #cf6679; color: white; z-index: 9999; padding: 10px; font-family: monospace; font-size: 12px;';
-        div.innerText = `JS ERROR: ${msg}\nLine: ${line}`;
+        div.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:#1d1d1f;color:#fff;z-index:9999;padding:12px 20px;font-family:system-ui,sans-serif;font-size:14px;border-bottom:2px solid #0066cc';
+        div.innerText = 'Error: ' + msg;
         document.body.appendChild(div);
         return false;
     };
 
-    console.log("Moonshiner UI v24 (Robust) loading...");
-
-    // 1. Asset Injection
     function injectAssets() {
-        const faviconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><circle cx="256" cy="256" r="256" fill="#000"/><g fill="#FFAB40"><path d="M156 300c0 120 44 160 100 160s100-40 100-160v-50h-200z"/><path d="M186 250c0-70 34-100 54-110v-30h32v30c20 10 54 40 54 110z"/><path d="M240 110V80c0-20 20-30 40-30h100c20 0 30 20 30 40v110h-20V90H272v20z"/></g><path d="M400 210q0 30 0 30c-10 10-10 20 0 30 10-10 10-20 0-30q0 0 0-30z" fill="#FFD700"/></svg>`;
-        const dataURI = `data:image/svg+xml;utf8,${encodeURIComponent(faviconSVG)}`;
-
-        const link = document.createElement("link");
-        link.rel = "icon"; link.type = "image/svg+xml"; link.href = dataURI;
-        document.head.appendChild(link);
-
-        if (!document.querySelector('meta[name="viewport"]')) {
-            const meta = document.createElement('meta');
-            meta.name = 'viewport';
-            meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-            document.head.appendChild(meta);
+        const meta = document.querySelector('meta[name="viewport"]');
+        if (!meta) {
+            const m = document.createElement('meta');
+            m.name = 'viewport';
+            m.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+            document.head.appendChild(m);
         }
 
         const style = document.createElement('style');
         style.textContent = `
             esp-app, .esp-app, body > esp-app { display: none !important; }
-            * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-            body { background-color: #121212; color: #e0e0e0; font-family: 'Roboto', sans-serif; margin: 0; padding: 0; }
+            *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
             :root {
-                --bg: #121212; --card: #1e1e1e; --text: #e0e0e0; --text-dim: #a0a0a0;
-                --accent: #03dac6; --danger: #cf6679; --success: #00c853; --warn: #ffab00;
+                --font-display: "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+                --font-text: "SF Pro Text", system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+
+                --primary: #0066cc;
+                --primary-hover: #0071e3;
+                --primary-on-dark: #2997ff;
+                --ink: #1d1d1f;
+                --ink-muted: #7a7a7a;
+                --ink-subtle: #a1a1a6;
+                --canvas: #ffffff;
+                --canvas-alt: #f5f5f7;
+                --card-bg: #ffffff;
+                --card-border: rgba(0,0,0,0.08);
+                --divider: #e0e0e0;
+                --divider-soft: #f0f0f0;
+                --surface-pearl: #fafafc;
+                --badge-bg: rgba(0,0,0,0.05);
+                --danger: #ff3b30;
+                --success: #34c759;
+                --warn: #ff9f0a;
+                --input-bg: #f5f5f7;
+                --input-border: rgba(0,0,0,0.08);
+                --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+                --radius-sm: 8px;
+                --radius-md: 11px;
+                --radius-lg: 18px;
+                --radius-pill: 9999px;
+                --body-font: var(--font-text);
+                --body-size: 17px;
+                --body-leading: 1.47;
+                --body-tracking: -0.374px;
             }
-            #custom-app { max-width: 800px; margin: 0 auto; padding: 15px; display: grid; gap: 15px; }
-            .card { background: var(--card); border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-            h2 { font-size: 1.1rem; color: var(--text-dim); margin: 0 0 15px 0; text-transform: uppercase; letter-spacing: 1px; }
-            h3 { font-size: 0.9rem; color: var(--text-dim); margin: 10px 0; }
-            
-            .sensor-group { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 15px; }
-            .sensor-display { flex: 1; min-width: 120px; text-align: center; }
-            .sensor-display .label { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 5px; }
-            .sensor-display .value { font-size: 2.2rem; font-weight: bold; color: var(--accent); }
-            .sensor-controls { flex: 2; min-width: 200px; }
-            
-            .control-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-            .control-row label { font-size: 0.9rem; color: var(--text-dim); min-width: 110px; }
-            .input-group { flex: 1; display: flex; gap: 8px; align-items: center; }
-            
-            input[type="number"] { background: #333; border: none; color: var(--text); padding: 8px; border-radius: 6px; font-size: 1rem; width: 100px; text-align: center; }
-            input[type="range"] { flex-grow: 1; height: 6px; border-radius: 3px; background: #333; outline: none; -webkit-appearance: none; }
-            input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; }
-            
-            .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; display: inline-block; margin-left: 5px; background: #333; color: var(--text-dim); }
-            .status-active { background: rgba(0, 200, 83, 0.2); color: var(--success); }
-            .status-alarm { background: rgba(207, 102, 121, 0.2); color: var(--danger); animation: pulse 1s infinite; }
+
+            [data-theme="dark"] {
+                --primary: #2997ff;
+                --primary-hover: #66bbff;
+                --primary-on-dark: #2997ff;
+                --ink: #f5f5f7;
+                --ink-muted: #a1a1a6;
+                --ink-subtle: #6e6e73;
+                --canvas: #000000;
+                --canvas-alt: #1d1d1f;
+                --card-bg: #1d1d1f;
+                --card-border: rgba(255,255,255,0.08);
+                --divider: #333333;
+                --divider-soft: #2a2a2c;
+                --surface-pearl: #272729;
+                --badge-bg: rgba(255,255,255,0.08);
+                --danger: #ff453a;
+                --success: #30d158;
+                --warn: #ffd60a;
+                --input-bg: #2a2a2c;
+                --input-border: rgba(255,255,255,0.08);
+                --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+            }
+
+            body {
+                margin: 0;
+                padding: 0;
+                background: var(--canvas);
+                color: var(--ink);
+                font-family: var(--body-font);
+                font-size: var(--body-size);
+                line-height: var(--body-leading);
+                letter-spacing: var(--body-tracking);
+                -webkit-font-smoothing: antialiased;
+                transition: background 0.3s, color 0.3s;
+            }
+
+            #custom-app {
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px 16px 40px;
+                display: grid;
+                gap: 16px;
+            }
+
+            .card {
+                background: var(--card-bg);
+                border: 1px solid var(--card-border);
+                border-radius: var(--radius-lg);
+                padding: 24px;
+                box-shadow: var(--shadow-sm);
+                transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+            }
+
+            .card-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+
+            .card-title {
+                font-family: var(--font-display);
+                font-size: 20px;
+                font-weight: 600;
+                letter-spacing: -0.374px;
+                color: var(--ink);
+                margin: 0;
+            }
+
+            .card-section-title {
+                font-family: var(--font-text);
+                font-size: 14px;
+                font-weight: 600;
+                letter-spacing: -0.224px;
+                color: var(--ink-muted);
+                margin: 20px 0 12px;
+                text-transform: uppercase;
+            }
+
+            .card-section-title:first-child { margin-top: 0; }
+
+            /* === Top Bar === */
+            .top-bar {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .top-bar-left h1 {
+                font-family: var(--font-display);
+                font-size: 28px;
+                font-weight: 600;
+                letter-spacing: -0.374px;
+                margin: 0;
+                color: var(--ink);
+            }
+
+            .top-bar-left .meta {
+                font-size: 12px;
+                color: var(--ink-muted);
+                margin-top: 4px;
+                letter-spacing: -0.12px;
+            }
+
+            .top-bar-left .meta span { margin-right: 12px; }
+
+            .top-bar-right {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-shrink: 0;
+            }
+
+            .conn-dot {
+                display: inline-block;
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: var(--success);
+                transition: background 0.3s;
+            }
+
+            .conn-dot.disconnected { background: var(--danger); }
+
+            .badge-row {
+                display: flex;
+                gap: 6px;
+                flex-wrap: wrap;
+            }
+
+            .badge {
+                font-size: 11px;
+                font-weight: 600;
+                letter-spacing: 0.3px;
+                padding: 4px 10px;
+                border-radius: var(--radius-pill);
+                background: var(--badge-bg);
+                color: var(--ink-muted);
+                text-transform: uppercase;
+                border: 1px solid var(--card-border);
+                transition: all 0.3s;
+            }
+
+            .badge.on {
+                background: rgba(0, 102, 204, 0.12);
+                color: var(--primary);
+                border-color: rgba(0, 102, 204, 0.2);
+            }
+
+            [data-theme="dark"] .badge.on {
+                background: rgba(41, 151, 255, 0.12);
+                border-color: rgba(41, 151, 255, 0.2);
+            }
+
+            .badge.danger {
+                background: rgba(255, 59, 48, 0.12);
+                color: var(--danger);
+                border-color: rgba(255, 59, 48, 0.2);
+                animation: pulse 1s infinite;
+            }
+
             @keyframes pulse { 50% { opacity: 0.5; } }
-            
-            .switch { position: relative; display: inline-block; width: 36px; height: 18px; }
+
+            /* === Status Message === */
+            .status-bar {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+
+            .status-msg {
+                font-family: var(--font-display);
+                font-size: 18px;
+                font-weight: 400;
+                letter-spacing: 0;
+                color: var(--ink);
+            }
+
+            .status-msg.done { color: var(--primary); }
+
+            /* === Buttons === */
+            .btn {
+                font-family: var(--font-text);
+                font-size: 14px;
+                font-weight: 400;
+                letter-spacing: -0.224px;
+                padding: 8px 16px;
+                border-radius: var(--radius-pill);
+                border: none;
+                cursor: pointer;
+                transition: all 0.2s;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                white-space: nowrap;
+                text-decoration: none;
+            }
+
+            .btn:active { transform: scale(0.95); }
+
+            .btn-primary {
+                background: var(--primary);
+                color: #fff;
+            }
+
+            .btn-primary:hover { background: var(--primary-hover); }
+
+            .btn-ghost {
+                background: transparent;
+                color: var(--primary);
+                border: 1px solid var(--primary);
+            }
+
+            .btn-ghost:hover { background: rgba(0, 102, 204, 0.08); }
+
+            [data-theme="dark"] .btn-ghost:hover { background: rgba(41, 151, 255, 0.08); }
+
+            .btn-danger {
+                background: var(--danger);
+                color: #fff;
+            }
+
+            .btn-danger:hover { opacity: 0.9; }
+
+            .btn-icon {
+                width: 36px;
+                height: 36px;
+                padding: 0;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: var(--input-bg);
+                border: 1px solid var(--card-border);
+                color: var(--ink);
+                font-size: 18px;
+            }
+
+            .btn-icon:active { transform: scale(0.9); }
+
+            .theme-toggle {
+                position: relative;
+                width: 44px;
+                height: 44px;
+                padding: 0;
+                border-radius: 50%;
+                border: 1px solid var(--card-border);
+                background: var(--card-bg);
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 20px;
+                transition: all 0.2s;
+                flex-shrink: 0;
+            }
+
+            .theme-toggle:active { transform: scale(0.9); }
+
+            .theme-toggle .icon { line-height: 1; }
+
+            /* === Sensors === */
+            .sensor-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+                margin-bottom: 20px;
+            }
+
+            .sensor-item {
+                background: var(--input-bg);
+                border-radius: var(--radius-md);
+                padding: 14px 16px;
+                text-align: center;
+                border: 1px solid var(--card-border);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .sensor-item .label {
+                font-size: 12px;
+                font-weight: 400;
+                color: var(--ink-muted);
+                letter-spacing: 0;
+                margin-bottom: 2px;
+            }
+
+            .sensor-item .value {
+                font-family: var(--font-display);
+                font-size: 32px;
+                font-weight: 600;
+                letter-spacing: -0.374px;
+                color: var(--ink);
+            }
+
+            .sensor-item .temp-ring {
+                position: absolute;
+                bottom: 6px;
+                right: 8px;
+                width: 44px;
+                height: 44px;
+                opacity: 0.3;
+            }
+
+            .sensor-item.temp-hot .value { color: var(--danger); }
+            .sensor-item.temp-warm .value { color: var(--warn); }
+            .sensor-item.temp-cold .value { color: var(--primary); }
+
+            @media (max-width: 734px) {
+                .sensor-item .value { font-size: 28px; }
+            }
+            @media (max-width: 419px) {
+                .sensor-item .value { font-size: 24px; }
+            }
+
+            /* === Controls === */
+            .control-group {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+
+            .control-item {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .control-item.full { grid-column: 1 / -1; }
+
+            .control-item label {
+                font-size: 14px;
+                font-weight: 400;
+                color: var(--ink-muted);
+                letter-spacing: 0;
+            }
+
+            .input-row {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            input[type="number"] {
+                font-family: var(--font-text);
+                font-size: 15px;
+                font-weight: 400;
+                width: 80px;
+                padding: 8px 6px;
+                border-radius: var(--radius-sm);
+                border: 1px solid var(--input-border);
+                background: var(--input-bg);
+                color: var(--ink);
+                text-align: center;
+                outline: none;
+                transition: border-color 0.2s;
+            }
+
+            .btn-stepper {
+                width: 36px;
+                height: 36px;
+                padding: 0;
+                border-radius: 50%;
+                background: var(--input-bg);
+                border: 1px solid var(--input-border);
+                color: var(--primary);
+                font-size: 18px;
+                font-weight: 400;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                flex-shrink: 0;
+                transition: all 0.15s;
+                line-height: 1;
+            }
+
+            .btn-stepper:active { transform: scale(0.85); background: var(--primary); color: #fff; }
+
+            input[type="number"]:focus {
+                border-color: var(--primary);
+                box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.12);
+            }
+
+            [data-theme="dark"] input[type="number"]:focus {
+                box-shadow: 0 0 0 3px rgba(41, 151, 255, 0.12);
+            }
+
+            input[type="range"] {
+                flex: 1;
+                height: 4px;
+                border-radius: 2px;
+                background: var(--divider);
+                outline: none;
+                -webkit-appearance: none;
+                appearance: none;
+                min-width: 0;
+            }
+
+            input[type="range"]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: var(--primary);
+                cursor: pointer;
+                border: 2px solid var(--card-bg);
+                box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+                transition: transform 0.15s;
+            }
+
+            input[type="range"]::-webkit-slider-thumb:active { transform: scale(1.15); }
+
+            input[type="range"]::-moz-range-thumb {
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: var(--primary);
+                cursor: pointer;
+                border: 2px solid var(--card-bg);
+                box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+            }
+
+            .switch-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 8px 0;
+            }
+
+            .switch-row label {
+                font-size: 14px;
+                font-weight: 400;
+                color: var(--ink-muted);
+                cursor: pointer;
+            }
+
+            .switch {
+                position: relative;
+                display: inline-block;
+                width: 44px;
+                height: 26px;
+                flex-shrink: 0;
+            }
+
             .switch input { opacity: 0; width: 0; height: 0; }
-            .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 18px; }
-            .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
-            input:checked + .slider { background-color: var(--warn); }
-            input:checked + .slider:before { transform: translateX(18px); }
-            
-            @media (max-width: 600px) {
-                .sensor-group { flex-direction: column; }
-                .control-row { flex-direction: column; align-items: stretch; gap: 5px; }
-                input[type="number"] { width: 100%; }
+
+            .switch .track {
+                position: absolute;
+                cursor: pointer;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: #e0e0e0;
+                border-radius: 13px;
+                transition: background 0.3s;
+            }
+
+            [data-theme="dark"] .switch .track { background: #444; }
+
+            .switch .track::before {
+                position: absolute;
+                content: "";
+                height: 22px; width: 22px;
+                left: 2px; bottom: 2px;
+                background: #fff;
+                border-radius: 50%;
+                transition: transform 0.25s;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            }
+
+            .switch input:checked + .track { background: var(--primary); }
+            .switch input:checked + .track::before { transform: translateX(18px); }
+
+            /* === Volume === */
+            .vol-row {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px 0;
+            }
+
+            .vol-row .vol-icon {
+                font-size: 18px;
+                color: var(--ink-muted);
+                flex-shrink: 0;
+                width: 24px;
+                text-align: center;
+            }
+
+            .vol-row input[type="range"] { flex: 1; }
+
+            .vol-row .vol-val {
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--ink);
+                min-width: 36px;
+                text-align: right;
+                font-variant-numeric: tabular-nums;
+            }
+
+            /* === Responsive === */
+            @media (max-width: 734px) {
+                #custom-app { padding: 12px; gap: 12px; }
+
+                .card { padding: 16px; border-radius: 14px; }
+
+                .top-bar-left h1 { font-size: 24px; }
+
+                .sensor-grid { grid-template-columns: 1fr; }
+
+                .control-group { grid-template-columns: 1fr; }
+
+                .sensor-item .value { font-size: 24px; }
+
+                .status-bar { flex-direction: column; align-items: flex-start; }
+            }
+
+            @media (max-width: 419px) {
+                #custom-app { padding: 8px; gap: 8px; }
+
+                .card { padding: 12px; }
+
+                .top-bar { flex-direction: column; }
+                .top-bar-left h1 { font-size: 20px; }
+
+                .card-title { font-size: 18px; }
+
+                .sensor-item { padding: 10px 12px; }
+                .sensor-item .value { font-size: 20px; }
+
+                input[type="number"] { width: 70px; font-size: 14px; padding: 6px 8px; }
             }
         `;
         document.head.appendChild(style);
     }
 
-    // 2. UI Initialization
     function initUI() {
         if (document.getElementById('custom-app')) return;
 
@@ -89,169 +605,194 @@
         app.id = 'custom-app';
         document.body.appendChild(app);
 
-        // Added default values to inputs to prevent empty fields on load
         app.innerHTML = `
             <div class="card">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div>
-                        <h2>Moonshiner v24 <span id="hb" style="color:var(--success); opacity:0.2;">●</span></h2>
-                        <div style="font-size: 0.8rem; color: #888;">
-                            <span id="conn-status" style="color: var(--warn)">Connecting...</span> | 
-                            Up: <span id="val-uptime">--</span> | 
-                            WiFi: <span id="val-wifi">--</span> dBm |
-                            Heap: <span id="val-heap">--</span>
+                <div class="top-bar">
+                    <div class="top-bar-left">
+                        <h1>Moonshiner <span id="hb" style="color:var(--success);opacity:0.2;">●</span></h1>
+                        <div class="meta">
+                            <span id="conn-status"><span class="conn-dot disconnected"></span> Connecting...</span>
+                            <span>Up <span id="val-uptime">--</span></span>
+                            <span>WiFi <span id="val-wifi">--</span> dBm</span>
+                            <span>Heap <span id="val-heap">--</span></span>
                         </div>
-                        <div style="font-size: 0.7rem; color: #666; margin-top: 2px;">
+                        <div class="meta" style="margin-top:1px;color:var(--ink-subtle);">
                             Reset: <span id="val-reset">--</span>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        <span id="st-distilling" class="status-badge">Distilling</span>
-                        <span id="st-heating" class="status-badge">Heating</span>
-                        <span id="st-alarm" class="status-badge">ALARM</span>
+                    <div class="top-bar-right">
+                        <button class="theme-toggle" id="btn-theme" aria-label="Toggle theme">
+                            <span class="icon">&#9790;</span>
+                        </button>
+                        <div class="badge-row">
+                            <span id="st-distilling" class="badge">Distilling</span>
+                            <span id="st-heating" class="badge">Heating</span>
+                            <span id="st-alarm" class="badge">Alarm</span>
+                        </div>
                     </div>
                 </div>
-                
-                <div style="margin-top: 10px; display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); padding: 5px 10px; border-radius: 8px;">
-                    <span style="font-size: 1.2rem;">🔊</span>
-                    <input type="range" id="in-vol-slider" min="0" max="100" step="1" value="100" style="width: 80px;">
-                    <input type="number" id="in-vol" value="100" style="display:none;">
-                </div>
 
-                <div style="margin-top: 15px; text-align: center; font-size: 1.1rem; color: var(--text); background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 15px;">
-                    <span id="val-msg">Подключение...</span>
-                    <button id="btn-restart" style="
-                        background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-                        border: none;
-                        color: white;
-                        padding: 8px 16px;
-                        border-radius: 20px;
-                        font-size: 0.85rem;
-                        font-weight: bold;
-                        cursor: pointer;
-                        box-shadow: 0 4px 15px rgba(238, 90, 36, 0.4);
-                        transition: all 0.3s ease;
-                        display: none;
-                    " onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(238, 90, 36, 0.6)';"
-                       onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(238, 90, 36, 0.4)';">
-                        🔄 Restart
-                    </button>
+                <div class="status-bar" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--divider-soft);">
+                    <span class="status-msg" id="val-msg">Connecting...</span>
+                    <button class="btn btn-danger" id="btn-restart" style="display:none;">Restart</button>
                 </div>
             </div>
 
             <div class="card">
-                <h2>Column Control</h2>
-                <div class="sensor-group">
-                    <div class="sensor-display">
-                        <div class="label">Column Temp</div>
+                <div class="card-header">
+                    <h2 class="card-title">Column Control</h2>
+                </div>
+
+                <div class="sensor-grid">
+                    <div class="sensor-item" id="col-temp-card">
+                        <div class="label">Column Temperature</div>
                         <div class="value"><span id="val-col-temp">--</span></div>
+                        <svg class="temp-ring" viewBox="0 0 44 44" id="col-temp-ring">
+                            <circle cx="22" cy="22" r="18" fill="none" stroke="var(--divider)" stroke-width="3"/>
+                            <circle cx="22" cy="22" r="18" fill="none" stroke="var(--primary)" stroke-width="3" stroke-dasharray="113" stroke-dashoffset="113" transform="rotate(-90 22 22)" id="col-temp-arc"/>
+                        </svg>
                     </div>
-                    <div class="sensor-controls">
-                        <div class="control-row">
-                            <label>Target (°C)</label>
-                            <div class="input-group">
-                                <input type="number" id="in-target" step="0.1" min="0" max="100" value="95.0">
-                                <input type="range" id="in-target-slider" min="0" max="100" step="0.1" value="95.0">
-                            </div>
+                    <div class="sensor-item" id="tank-temp-card">
+                        <div class="label">Tank Temperature</div>
+                        <div class="value"><span id="val-tank-temp">--</span></div>
+                        <svg class="temp-ring" viewBox="0 0 44 44" id="tank-temp-ring">
+                            <circle cx="22" cy="22" r="18" fill="none" stroke="var(--divider)" stroke-width="3"/>
+                            <circle cx="22" cy="22" r="18" fill="none" stroke="var(--primary)" stroke-width="3" stroke-dasharray="113" stroke-dashoffset="113" transform="rotate(-90 22 22)" id="tank-temp-arc"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-item full">
+                        <label>Target Temperature</label>
+                        <div class="input-row">
+                            <button class="btn btn-stepper" data-stepper="in-target" data-step="-0.1">&minus;</button>
+                            <input type="number" id="in-target" step="0.1" min="0" max="100" value="95.0">
+                            <input type="range" id="in-target-slider" min="0" max="100" step="0.1" value="95.0">
+                            <button class="btn btn-stepper" data-stepper="in-target" data-step="0.1">&plus;</button>
                         </div>
-                        <div class="control-row">
-                            <label>Delta</label>
-                            <div class="input-group">
-                                <input type="number" id="in-delta" step="0.1" min="0" max="5" value="0.3">
-                            </div>
+                    </div>
+                    <div class="control-item">
+                        <label>Delta</label>
+                        <div class="input-row">
+                            <input type="number" id="in-delta" step="0.1" min="0" max="5" value="0.3">
+                        </div>
+                    </div>
+                    <div class="control-item">
+                        <label>Max Tank Temp</label>
+                        <div class="input-row">
+                            <input type="number" id="in-max-tank" step="0.1" min="0" max="100" value="99.0">
                         </div>
                     </div>
                 </div>
 
-                <div class="control-row">
+                <div class="control-item full" style="margin-top:12px;">
                     <label>Coef Otbora</label>
-                    <div class="input-group">
+                    <div class="input-row">
                         <input type="number" id="in-coef" step="0.05" min="0" max="1" value="1.0">
                         <input type="range" id="in-coef-slider" min="0" max="1" step="0.05" value="1.0">
                     </div>
                 </div>
-                
-                <div class="control-row">
-                    <label>Use Reduction</label>
-                    <label class="switch">
-                        <input type="checkbox" id="sw-reduction" checked>
-                        <span class="slider"></span>
-                    </label>
-                </div>
 
-                <h3>Valves (PWM 0-1023)</h3>
-                <div class="control-row">
-                    <label>Valve High</label>
-                    <div class="input-group">
-                        <input type="number" id="in-vh" step="1" min="0" max="1023" value="0">
-                        <input type="range" id="in-vh-slider" min="0" max="1023" step="1" value="0">
+                <div style="border-top:1px solid var(--divider-soft);margin-top:16px;padding-top:12px;">
+                    <div class="switch-row">
+                        <label for="sw-reduction">Use Reduction</label>
+                        <label class="switch">
+                            <input type="checkbox" id="sw-reduction" checked>
+                            <span class="track"></span>
+                        </label>
                     </div>
-                </div>
-                <div class="control-row">
-                    <label>Valve Low</label>
-                    <div class="input-group">
-                        <input type="number" id="in-vl" step="1" min="0" max="1023" value="0">
-                        <input type="range" id="in-vl-slider" min="0" max="1023" step="1" value="0">
-                    </div>
-                </div>
-                <div class="control-row">
-                    <label>Disable Closing</label>
-                    <label class="switch">
-                        <input type="checkbox" id="sw-disable-close">
-                        <span class="slider"></span>
-                    </label>
                 </div>
             </div>
 
             <div class="card">
-                <h2>Tank Control</h2>
-                <div class="sensor-group">
-                    <div class="sensor-display">
-                        <div class="label">Tank Temp</div>
-                        <div class="value"><span id="val-tank-temp">--</span></div>
+                <div class="card-header">
+                    <h2 class="card-title">Valves & Heater</h2>
+                </div>
+
+                <div class="control-group">
+                    <div class="control-item">
+                        <label>Valve High</label>
+                        <div class="input-row">
+                            <input type="number" id="in-vh" step="1" min="0" max="1023" value="0">
+                            <input type="range" id="in-vh-slider" min="0" max="1023" step="1" value="0">
+                        </div>
                     </div>
-                    <div class="sensor-controls">
-                        <div class="control-row">
-                            <label>Max Tank</label>
-                            <div class="input-group">
-                                <input type="number" id="in-max-tank" step="0.1" min="0" max="100" value="99.0">
-                            </div>
+                    <div class="control-item">
+                        <label>Valve Low</label>
+                        <div class="input-row">
+                            <input type="number" id="in-vl" step="1" min="0" max="1023" value="0">
+                            <input type="range" id="in-vl-slider" min="0" max="1023" step="1" value="0">
+                        </div>
+                    </div>
+                    <div class="control-item full">
+                        <label>Heater Power</label>
+                        <div class="input-row">
+                            <input type="number" id="in-heat" step="1" min="0" max="1023" value="0">
+                            <input type="range" id="in-heat-slider" min="0" max="1023" step="1" value="0">
                         </div>
                     </div>
                 </div>
-                <div class="control-row">
-                    <label>Heater Power</label>
-                    <div class="input-group">
-                        <input type="number" id="in-heat" step="1" min="0" max="1023" value="0">
-                        <input type="range" id="in-heat-slider" min="0" max="1023" step="1" value="0">
+
+                <div style="border-top:1px solid var(--divider-soft);margin-top:16px;padding-top:12px;">
+                    <div class="switch-row">
+                        <label for="sw-disable-close">Disable Upper Valve Closing</label>
+                        <label class="switch">
+                            <input type="checkbox" id="sw-disable-close">
+                            <span class="track"></span>
+                        </label>
                     </div>
+                </div>
+
+                <div class="vol-row" style="border-top:1px solid var(--divider-soft);margin-top:16px;padding-top:12px;">
+                    <label for="in-vol-slider" style="font-size:14px;color:var(--ink-muted);flex-shrink:0;min-width:60px;">Volume</label>
+                    <span class="vol-icon" id="vol-icon">&#9835;</span>
+                    <input type="range" id="in-vol-slider" min="0" max="100" step="1" value="100">
+                    <span class="vol-val" id="vol-val">100</span>
+                    <input type="number" id="in-vol" value="100" style="display:none;">
                 </div>
             </div>
         `;
 
-        // 3. Logic & Data Binding
+        // === Theme Toggle ===
+        const themeToggle = document.getElementById('btn-theme');
+        const icon = themeToggle.querySelector('.icon');
 
-        // Helper for robust number parsing
+        function getPreferredTheme() {
+            const stored = localStorage.getItem('theme');
+            if (stored) return stored;
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            icon.textContent = theme === 'dark' ? '\u2600' : '\u263E';
+        }
+
+        applyTheme(getPreferredTheme());
+
+        themeToggle.addEventListener('click', () => {
+            const current = document.documentElement.getAttribute('data-theme');
+            applyTheme(current === 'dark' ? 'light' : 'dark');
+        });
+
+        // === Logic & Data Binding ===
         const parseNum = (v) => {
             const n = parseFloat(v);
             return isNaN(n) ? null : n;
         };
 
-        // Entity Mapping - Keys MUST match ESPHome entity IDs exactly (domain-snake_case_name)
-        // ESPHome Web Server v3 uses the 'name' field to generate IDs, not the 'id' field
         const entities = {
-            // Sensors (read-only displays)
-            'sensor-column_temperature': { el: 'val-col-temp', fmt: v => parseNum(v) !== null ? parseNum(v).toFixed(4) + ' °C' : '--' },
-            'sensor-tank_temperature': { el: 'val-tank-temp', fmt: v => parseNum(v) !== null ? parseNum(v).toFixed(1) + ' °C' : '--' },
-            'sensor-uptime': { el: 'val-uptime', fmt: v => { const s = parseInt(v); return isNaN(s) ? '--' : `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`; } },
+            'sensor-column_temperature': { el: 'val-col-temp', fmt: v => { const n = parseNum(v); return n !== null ? n.toFixed(1) + '\u00B0' : '--'; }, temp: 'val-col-temp' },
+            'sensor-tank_temperature': { el: 'val-tank-temp', fmt: v => { const n = parseNum(v); return n !== null ? n.toFixed(1) + '\u00B0' : '--'; }, temp: 'val-tank-temp' },
+            'sensor-uptime': { el: 'val-uptime', fmt: v => { const s = parseInt(v); return isNaN(s) ? '--' : Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm'; } },
             'sensor-wifi_signal': { el: 'val-wifi', fmt: v => parseNum(v) !== null ? Math.round(parseNum(v)) : '--' },
             'sensor-free_heap': { el: 'val-heap', fmt: v => parseNum(v) !== null ? Math.round(parseNum(v) / 1024) + 'KB' : '--' },
 
-            // Text Sensors
             'text_sensor-status_message': { el: 'val-msg' },
             'text_sensor-reset_reason': { el: 'val-reset' },
 
-            // Number Inputs (user controls)
             'number-target_column_temp': { in: 'in-target', sl: 'in-target-slider', api: 'number/target_column_temp' },
             'number-delta': { in: 'in-delta', api: 'number/delta' },
             'number-coef_otbora': { in: 'in-coef', sl: 'in-coef-slider', api: 'number/coef_otbora' },
@@ -261,17 +802,14 @@
             'number-heater_power': { in: 'in-heat', sl: 'in-heat-slider', api: 'number/heater_power' },
             'number-buzzer_volume': { in: 'in-vol', sl: 'in-vol-slider', api: 'number/buzzer_volume' },
 
-            // Switches
             'switch-use_reduction_coefficient': { sw: 'sw-reduction', api: 'switch/use_reduction_coefficient' },
             'switch-disable_upper_valve_closing': { sw: 'sw-disable-close', api: 'switch/disable_upper_valve_closing' },
 
-            // Binary Sensors (status indicators)
             'binary_sensor-distilling_status': { st: 'st-distilling' },
             'binary_sensor-heating_status': { st: 'st-heating' },
-            'binary_sensor-alarm_status': { st: 'st-alarm', cls: 'status-alarm' }
+            'binary_sensor-alarm_status': { st: 'st-alarm', cls: 'danger' }
         };
 
-        // Debounce helper
         function debounce(func, wait) {
             let timeout;
             return function (...args) {
@@ -280,37 +818,30 @@
             };
         }
 
-        // Setup Event Listeners for User Inputs
-        // CRITICAL: Create debounced functions ONCE per element, then reuse them
         Object.keys(entities).forEach(entityId => {
             const cfg = entities[entityId];
 
-            // Handle Number Inputs
             if (cfg.in) {
                 const input = document.getElementById(cfg.in);
                 const slider = cfg.sl ? document.getElementById(cfg.sl) : null;
-                const apiPath = cfg.api; // Use explicit API path from config
+                const apiPath = cfg.api;
 
                 if (input && apiPath) {
-                    // Create debounced fetch function ONCE (not inside event handler!)
                     const debouncedUpdate = debounce((value) => {
-                        fetch(`/${apiPath}/set?value=${value}`, { method: 'POST' })
-                            .catch(err => console.error(`Failed to update ${entityId}:`, err));
+                        fetch('/' + apiPath + '/set?value=' + value, { method: 'POST' })
+                            .catch(err => console.error('Failed to update ' + entityId + ':', err));
                     }, 400);
 
-                    // Input field: update on change (when user finishes typing)
                     input.addEventListener('change', e => {
                         const val = parseFloat(e.target.value);
                         if (!isNaN(val)) debouncedUpdate(val);
                     });
 
-                    // Sync slider with input
                     if (slider) {
                         input.addEventListener('input', e => {
                             slider.value = e.target.value;
                         });
 
-                        // Slider: update on drag (debounced to prevent DDOS)
                         slider.addEventListener('input', e => {
                             input.value = e.target.value;
                             debouncedUpdate(e.target.value);
@@ -319,7 +850,6 @@
                 }
             }
 
-            // Handle Switches
             if (cfg.sw) {
                 const switchEl = document.getElementById(cfg.sw);
                 const apiPath = cfg.api;
@@ -327,140 +857,152 @@
                 if (switchEl && apiPath) {
                     switchEl.addEventListener('change', e => {
                         const cmd = e.target.checked ? 'turn_on' : 'turn_off';
-                        fetch(`/${apiPath}/${cmd}`, { method: 'POST' })
-                            .catch(err => console.error(`Failed to toggle ${entityId}:`, err));
+                        fetch('/' + apiPath + '/' + cmd, { method: 'POST' })
+                            .catch(err => console.error('Failed to toggle ' + entityId + ':', err));
                     });
                 }
             }
         });
 
-        // Restart Process Button Handler
         const restartBtn = document.getElementById('btn-restart');
         if (restartBtn) {
             restartBtn.addEventListener('click', () => {
+                if (!confirm('Restart distillation process? All current settings will be preserved.')) return;
                 fetch('/button/restart_process/press', { method: 'POST' })
                     .then(() => {
                         restartBtn.style.display = 'none';
-                        console.log('[UI] Restart Process button pressed');
                     })
                     .catch(err => console.error('Failed to restart process:', err));
             });
         }
 
-        // EventSource for real-time updates
-        const source = new EventSource("/events");
+        // Volume slider sync
+        const volSlider = document.getElementById('in-vol-slider');
+        const volVal = document.getElementById('vol-val');
+        if (volSlider && volVal) {
+            volSlider.addEventListener('input', function () {
+                volVal.textContent = this.value;
+            });
+        }
+
+        // Stepper buttons for numeric inputs
+        document.querySelectorAll('.btn-stepper').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const targetId = this.dataset.stepper;
+                const step = parseFloat(this.dataset.step);
+                const input = document.getElementById(targetId);
+                if (!input) return;
+                const current = parseFloat(input.value) || 0;
+                const min = parseFloat(input.min) || 0;
+                const max = parseFloat(input.max) || 100;
+                const precision = (String(step).split('.')[1] || '').length;
+                const next = Math.min(max, Math.max(min, parseFloat((current + step).toFixed(precision))));
+                input.value = next;
+                input.dispatchEvent(new Event('change'));
+                const sliderId = targetId + '-slider';
+                const slider = document.getElementById(sliderId);
+                if (slider) slider.value = next;
+            });
+        });
+
+        const source = new EventSource('/events');
         let connTimer;
+
+        function updateTempVisuals(sensorId, tempC) {
+            const card = document.getElementById(sensorId === 'sensor-column_temperature' ? 'col-temp-card' : 'tank-temp-card');
+            const arc = document.getElementById(sensorId === 'sensor-column_temperature' ? 'col-temp-arc' : 'tank-temp-arc');
+            if (!card || tempC === null) return;
+            card.classList.remove('temp-cold', 'temp-warm', 'temp-hot');
+            const frac = Math.min(1, Math.max(0, (tempC - 20) / 80));
+            const circ = 113;
+            if (arc) arc.setAttribute('stroke-dashoffset', circ - frac * circ);
+            const color = tempC < 60 ? 'var(--primary)' : tempC < 80 ? 'var(--warn)' : 'var(--danger)';
+            if (arc) arc.setAttribute('stroke', color);
+            if (tempC < 60) card.classList.add('temp-cold');
+            else if (tempC < 80) card.classList.add('temp-warm');
+            else card.classList.add('temp-hot');
+        }
 
         function setConnected(state) {
             const el = document.getElementById('conn-status');
             const hb = document.getElementById('hb');
             if (state) {
-                el.textContent = 'Connected';
-                el.style.color = 'var(--success)';
-                if (hb) { hb.style.opacity = 1; setTimeout(() => hb.style.opacity = 0.2, 200); }
+                el.innerHTML = '<span class="conn-dot"></span> Connected';
+                if (hb) { hb.style.opacity = 1; setTimeout(function () { hb.style.opacity = 0.2; }, 200); }
             } else {
-                el.textContent = 'Disconnected';
-                el.style.color = 'var(--danger)';
+                el.innerHTML = '<span class="conn-dot disconnected"></span> Disconnected';
             }
         }
 
         source.addEventListener('state', e => {
             setConnected(true);
             clearTimeout(connTimer);
-            connTimer = setTimeout(() => setConnected(false), 5000);
+            connTimer = setTimeout(function () { setConnected(false); }, 5000);
 
             const data = JSON.parse(e.data);
 
-            // DEBUG: Log ALL incoming data
-            console.log(`[EventSource] ID: ${data.id}, State: "${data.state}", Type: ${typeof data.state}`);
-
-            // Debug: log unknown entity IDs
             if (!entities[data.id]) {
-                console.warn(`[EventSource] Unknown Entity ID: ${data.id}, State: ${data.state}`);
+                console.warn('Unknown entity: ' + data.id + ' = ' + data.state);
                 return;
             }
 
             const cfg = entities[data.id];
 
-            // Update Text Elements (sensors, status)
             if (cfg.el) {
                 const el = document.getElementById(cfg.el);
                 if (el) {
                     const newText = cfg.fmt ? cfg.fmt(data.state) : data.state;
-                    console.log(`[Update Text] ${data.id} -> ${cfg.el}: "${newText}"`);
                     el.textContent = newText;
 
-                    // Show/hide restart button based on status message
                     if (data.id === 'text_sensor-status_message') {
-                        const restartBtn = document.getElementById('btn-restart');
-                        if (restartBtn) {
-                            restartBtn.style.display = (data.state === 'DONE') ? 'inline-block' : 'none';
+                        const btn = document.getElementById('btn-restart');
+                        if (btn) {
+                            btn.style.display = (data.state === 'DONE') ? 'inline-flex' : 'none';
                         }
+                        el.classList.toggle('done', data.state === 'DONE');
+                    }
+
+                    if (data.id === 'sensor-column_temperature' || data.id === 'sensor-tank_temperature') {
+                        const n = parseFloat(data.state);
+                        if (!isNaN(n)) updateTempVisuals(data.id, n);
                     }
                 }
             }
 
-            // Update Number Inputs (only if not focused AND value is meaningful)
             if (cfg.in) {
                 const input = document.getElementById(cfg.in);
-                const currentValue = input ? input.value : 'N/A';
-
-                console.log(`[Update Input] ${data.id} -> ${cfg.in}: Current="${currentValue}", New="${data.state}", Focused=${document.activeElement === input}`);
-
                 if (input && document.activeElement !== input) {
-                    // Only update if we have a valid, non-empty value
                     if (data.state !== null && data.state !== '' && data.state !== undefined) {
-                        // CRITICAL FIX: ESPHome sends values with units (e.g., "95.0000 °C")
-                        // HTML <input type="number"> only accepts pure numbers
-                        // Extract numeric part from string
                         let numericValue = data.state;
-
-                        // If state is a string, try to extract the number
                         if (typeof data.state === 'string') {
-                            // Remove units and extra whitespace, keep only number
-                            // Match: optional minus, digits, optional decimal point and digits
                             const match = data.state.match(/-?\d+\.?\d*/);
-                            if (match) {
-                                numericValue = match[0];
-                            }
+                            if (match) numericValue = match[0];
                         }
-
                         const numVal = parseFloat(numericValue);
                         if (!isNaN(numVal)) {
-                            console.log(`[Input UPDATED] ${cfg.in}: "${currentValue}" -> "${numericValue}" (from "${data.state}")`);
                             input.value = numericValue;
-
-                            // Sync slider if exists and not focused
                             if (cfg.sl) {
                                 const slider = document.getElementById(cfg.sl);
                                 if (slider && document.activeElement !== slider) {
                                     slider.value = numericValue;
                                 }
                             }
-                        } else {
-                            console.warn(`[Input SKIPPED] ${cfg.in}: Invalid number "${data.state}"`);
                         }
-                    } else {
-                        console.warn(`[Input SKIPPED] ${cfg.in}: Empty/null value "${data.state}"`);
                     }
                 }
             }
 
-            // Update Switches
             if (cfg.sw) {
                 const el = document.getElementById(cfg.sw);
                 if (el) {
-                    const newState = (data.state === 'ON');
-                    console.log(`[Update Switch] ${data.id} -> ${cfg.sw}: ${newState}`);
-                    el.checked = newState;
+                    el.checked = (data.state === 'ON');
                 }
             }
 
-            // Update Status Badges
             if (cfg.st) {
                 const el = document.getElementById(cfg.st);
                 if (el) {
-                    const activeClass = cfg.cls || 'status-active';
+                    const activeClass = cfg.cls || 'on';
                     if (data.state === 'ON') {
                         el.classList.add(activeClass);
                     } else {
@@ -470,13 +1012,11 @@
             }
         });
 
-        source.onerror = () => {
-            console.error('[EventSource] Connection error');
+        source.onerror = function () {
             setConnected(false);
         };
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initUI);
     else initUI();
-
 })();
