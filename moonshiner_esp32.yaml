@@ -1,0 +1,868 @@
+esphome:
+  name: moonshiner-esp32
+  friendly_name: Moonshiner ESP32
+  # -------------------------------------------------------------------------
+  # MOONSHINER ESP32 CONFIGURATION
+  # -------------------------------------------------------------------------
+  # This configuration controls a distillation process using an ESP32.
+  # Features:
+  # - PID-like Hysteresis Control for Column Temperature
+  # - Safety Shutdowns (Tank Overheat, Watchdog)
+  # - Web Interface (v3) with Custom JS UI
+  # - RTTTL Alarm System
+  # -------------------------------------------------------------------------
+
+  on_boot:
+    - priority: 600
+      then:
+        # Initialize globals and ensure safe state on boot
+        - lambda: |-
+            id(boot_counter) += 1;
+            ESP_LOGW("boot", "Boot #%d", id(boot_counter));
+        - output.turn_off: heater_output
+        - output.turn_off: valve_high_output
+        - output.turn_off: valve_low_output
+        - rtttl.stop:
+            id: my_rtttl
+        - globals.set:
+            id: last_temp_update
+            value: !lambda "return esphome::millis();"
+        - lambda: |-
+            id(wifi_signal_sensor).update();
+
+  on_shutdown:
+    then:
+      # SAFETY: Turn off all outputs on shutdown/restart
+      - output.turn_off: heater_output
+      - output.turn_off: valve_high_output
+      - output.turn_off: valve_low_output
+      - rtttl.stop:
+          id: my_rtttl
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+    version: 5.5.0
+    sdkconfig_options:
+      CONFIG_LWIP_MAX_SOCKETS: "16" # Increase max sockets from 10 to 16 for multiple simultaneous connections
+
+# Enable logging (Level INFO is good for production)
+logger:
+  level: INFO
+  logs:
+    esp-idf: ERROR # Suppress I2C error spam (hardware retries are normal for SH1106)
+
+# Enable Home Assistant API (Required for some internal ESPHome functions)
+api:
+  reboot_timeout: 0s
+
+debug:
+
+# Enable Over-The-Air Updates
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  id: wifi_component
+  reboot_timeout: 0s
+  power_save_mode: NONE # Critical for responsive Web UI
+  fast_connect: true
+
+  ap:
+    ssid: "Moonshiner ESP32 Hotspot"
+    password: !secret ap_password
+
+# Web Server v3 - Serves the Custom UI
+web_server:
+  port: 80
+  version: 3
+  js_include: moonshiner_ui_v24.js # Points to the custom frontend file
+  js_url: "" # Disable default ESPHome JS to save bandwidth/conflicts
+  css_url: ""
+  log: false # Disable web logging to prevent I2C error spam from crashing UI
+
+# I2C Bus for OLED Display
+i2c:
+  id: i2c_bus
+  sda: GPIO21
+  scl: GPIO22
+
+# OneWire Bus for DS18B20 Temperature Sensors
+one_wire:
+  - platform: gpio
+    pin: GPIO4
+    id: dallas_hub
+
+# -------------------------------------------------------------------------
+# GLOBAL VARIABLES
+# -------------------------------------------------------------------------
+globals:
+  # Watchdog timer variable
+  - id: last_temp_update
+    type: int
+    restore_value: no
+    initial_value: "0"
+
+  # Diagnostic boot counter
+  - id: boot_counter
+    type: int
+    restore_value: true
+    initial_value: "0"
+
+  # Flag to indicate process completion
+  - id: process_finished
+    type: bool
+    restore_value: true
+    initial_value: "false"
+
+  # Flag for startup logic execution
+  - id: startup_checked
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+  # Flag to track if we are in the overheat hysteresis loop
+  - id: overheat_active
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+  # Track last valve levels to avoid redundant updates (SlowPWM state is protected)
+  - id: last_valve_high_level
+    type: float
+    restore_value: false
+    initial_value: "0.0"
+
+  - id: last_valve_low_level
+    type: float
+    restore_value: false
+    initial_value: "0.0"
+
+  # Pulse mode timers for valves (replaces slow_pwm)
+  - id: valve_high_next_pulse
+    type: unsigned long
+    restore_value: false
+    initial_value: "0"
+
+  - id: valve_low_next_pulse
+    type: unsigned long
+    restore_value: false
+    initial_value: "0"
+
+  - id: valve_high_pulse_active
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+  - id: valve_low_pulse_active
+    type: bool
+    restore_value: false
+    initial_value: "false"
+
+# -------------------------------------------------------------------------
+# USER INPUTS (Numbers)
+# -------------------------------------------------------------------------
+number:
+  # Target temperature for the column (e.g., 78.0 C for ethanol)
+  - platform: template
+    name: "Target Column Temp" # Web ID: number-target_column_temp
+    id: target_temp
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 100
+    step: 0.0001
+    initial_value: 95.0
+    mode: box
+    unit_of_measurement: "°C"
+    icon: "mdi:thermometer-target"
+    device_class: temperature
+
+  # Allowed deviation from target before valves close
+  - platform: template
+    name: "Delta"
+    id: delta
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 5.0
+    step: 0.01
+    initial_value: 0.3
+    mode: box
+    unit_of_measurement: "°C"
+    icon: "mdi:arrow-expand-vertical"
+    device_class: temperature
+
+  # Safety limit for the tank (boiler) temperature
+  - platform: template
+    name: "Max Tank Temp"
+    id: max_tank_temp
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 100
+    step: 0.1
+    initial_value: 99.0
+    mode: box
+    unit_of_measurement: "°C"
+    icon: "mdi:thermometer-alert"
+    device_class: temperature
+
+  # Collection Rate Coefficient (0.0 - 1.0)
+  # Multiplies the valve PWM settings to globally reduce speed
+  - platform: template
+    name: "Coef Otbora"
+    id: coef_otbora
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 1.0
+    step: 0.001
+    initial_value: 1.0
+    mode: slider
+    icon: "mdi:valve"
+
+  # Heater Power Control (0-1023)
+  - platform: template
+    name: "Heater Power" # Web ID: number-heater_power
+    id: heat_power
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 1023
+    step: 1
+    initial_value: 0
+    mode: box
+    icon: "mdi:fire"
+    on_value:
+      then:
+        - script.execute: control_logic
+        - lambda: |-
+            id(heating_status).publish_state(id(heat_power).state > 0);
+
+  # High Valve (Heads/Body) PWM Setting (0-1023)
+  - platform: template
+    name: "Valve High Setting"
+    id: valve_high_setting
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 1023
+    step: 1
+    initial_value: 0
+    mode: box
+    icon: "mdi:pipe-valve"
+    on_value:
+      then:
+        - lambda: |-
+            // Upper valve: NO coefficient applied
+            float vh = id(valve_high_setting).state / 1023.0;
+            id(last_valve_high_level) = vh;
+            id(distilling_status).publish_state(id(valve_high_setting).state > 0 || id(valve_low_setting).state > 0);
+
+  # Low Valve (Tails) PWM Setting (0-1023)
+  - platform: template
+    name: "Valve Low Setting"
+    id: valve_low_setting
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 1023
+    step: 1
+    initial_value: 0
+    mode: box
+    icon: "mdi:pipe-valve"
+    on_value:
+      then:
+        - lambda: |-
+            float vl = id(valve_low_setting).state * id(coef_otbora).state / 1023.0;
+            id(last_valve_low_level) = vl;
+            id(distilling_status).publish_state(id(valve_high_setting).state > 0 || id(valve_low_setting).state > 0);
+
+  # Buzzer Volume (0-100)
+  - platform: template
+    name: "Buzzer Volume"
+    id: buzzer_volume
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 100
+    step: 1
+    initial_value: 100
+    mode: slider
+    icon: "mdi:volume-high"
+
+# -------------------------------------------------------------------------
+# BUTTONS
+# -------------------------------------------------------------------------
+button:
+  # Button to force UI refresh
+  - platform: template
+    name: "Refresh UI"
+    id: refresh_ui_button
+    icon: "mdi:refresh"
+    on_press:
+      - script.execute: refresh_ui
+
+  # Button to restart the distillation process
+  - platform: template
+    name: "Restart Process"
+    id: restart_process_button
+    icon: "mdi:restart"
+    on_press:
+      - lambda: |-
+          // Reset process finished flag
+          id(process_finished) = false;
+
+          // Reset collection coefficient to 1.0
+          id(coef_otbora).publish_state(1.0);
+
+          // Clear overheat flag
+          id(overheat_active) = false;
+
+          // Update status
+          id(status_message).publish_state("RUNNING");
+
+          ESP_LOGI("control", "Process restarted manually");
+
+# -------------------------------------------------------------------------
+# USER INPUTS (Switches)
+# -------------------------------------------------------------------------
+switch:
+  # Enable automatic reduction of Coef Otbora when tank > 84C
+  - platform: template
+    name: "Use Reduction Coefficient"
+    id: use_reduction_coefficient
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    icon: "mdi:chart-line-variant"
+
+  # Override: Prevent upper valve from closing during temperature jumps
+  - platform: template
+    name: "Disable Upper Valve Closing"
+    id: disable_upper_valve_closing
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    icon: "mdi:valve-open"
+
+# -------------------------------------------------------------------------
+# OUTPUTS
+# -------------------------------------------------------------------------
+output:
+  # Heater SSR (Slow PWM 1Hz)
+  - platform: slow_pwm
+    pin: GPIO27
+    id: heater_output
+    period: 1s
+
+  # High Valve (GPIO for Pulse Mode)
+  - platform: gpio
+    pin: GPIO14
+    id: valve_high_output
+
+  # Low Valve (GPIO for Pulse Mode)
+  - platform: gpio
+    pin: GPIO13
+    id: valve_low_output
+
+  # Buzzer (LEDC for Tone Generation)
+  - platform: ledc
+    pin: GPIO33
+    id: speaker_output
+
+# RTTTL Music Player for Alarms
+rtttl:
+  output: speaker_output
+  id: my_rtttl
+  on_finished_playback:
+    - binary_sensor.template.publish:
+        id: alarm_status
+        state: OFF
+
+# -------------------------------------------------------------------------
+# SENSORS
+# -------------------------------------------------------------------------
+sensor:
+  # Safety Sensors
+  - platform: uptime
+    name: "Uptime" # Web ID: sensor-uptime
+    id: uptime_sensor
+
+  # Column Temperature
+  - platform: dallas_temp
+    one_wire_id: dallas_hub
+    address: 0x043C01F096B22428
+    name: "Column Temperature" # Web ID: sensor-column_temperature
+    id: column_temp
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 4
+    update_interval: 1s
+    filters:
+      - median:
+          window_size: 5
+          send_every: 1
+          send_first_at: 1
+    on_value:
+      then:
+        - globals.set:
+            id: last_temp_update
+            value: !lambda "return esphome::millis();"
+        - script.execute: control_logic
+
+  # Tank Temperature
+  - platform: dallas_temp
+    one_wire_id: dallas_hub
+    address: 0xBF14D0231E64FF28
+    name: "Tank Temperature" # Web ID: sensor-tank_temperature
+    id: tank_temp
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+    accuracy_decimals: 4
+    update_interval: 1s
+    filters:
+      - median:
+          window_size: 5
+          send_every: 1
+          send_first_at: 1
+    on_value:
+      then:
+        - globals.set:
+            id: last_temp_update
+            value: !lambda "return esphome::millis();"
+        - script.execute: control_logic
+
+  # Diagnostic Sensors
+  - platform: template
+    name: "Free Heap"
+    id: free_heap
+    lambda: "return heap_caps_get_free_size(MALLOC_CAP_INTERNAL);"
+    update_interval: 30s
+    unit_of_measurement: "bytes"
+    accuracy_decimals: 0
+    icon: "mdi:memory"
+    on_value:
+      then:
+        - lambda: |-
+            unsigned long uptime_sec = esphome::millis() / 1000;
+            ESP_LOGW("heap", "Uptime: %lus | Free: %.0f bytes", 
+                     uptime_sec, id(free_heap).state);
+
+  - platform: wifi_signal
+    name: "WiFi Signal" # Web ID: sensor-wifi_signal
+    id: wifi_signal_sensor
+    update_interval: 60s
+
+  - platform: template
+    name: "Heap Frag"
+    id: heap_frag
+    lambda: |-
+      size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
+      size_t largest_block = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL);
+      if (free_heap == 0) return 0;
+      return 100.0 * (1.0 - (float)largest_block / (float)free_heap);
+    update_interval: 30s
+    unit_of_measurement: "%"
+    accuracy_decimals: 1
+    icon: "mdi:memory"
+
+# -------------------------------------------------------------------------
+# BINARY SENSORS (UI Status Flags)
+# -------------------------------------------------------------------------
+binary_sensor:
+  - platform: template
+    name: "Distilling Status"
+    id: distilling_status
+
+  - platform: template
+    name: "Heating Status"
+    id: heating_status
+
+  - platform: template
+    name: "Alarm Status"
+    id: alarm_status
+
+# -------------------------------------------------------------------------
+# CONTROL LOGIC
+# -------------------------------------------------------------------------
+script:
+  # Force update of all UI elements
+  - id: refresh_ui
+    then:
+      - lambda: |-
+          // Publish current state of all inputs to sync UI
+          ESP_LOGI("refresh_ui", "Publishing all states to UI...");
+          id(target_temp).publish_state(id(target_temp).state);
+          id(delta).publish_state(id(delta).state);
+          id(max_tank_temp).publish_state(id(max_tank_temp).state);
+          id(coef_otbora).publish_state(id(coef_otbora).state);
+          id(heat_power).publish_state(id(heat_power).state);
+          id(valve_high_setting).publish_state(id(valve_high_setting).state);
+          id(valve_low_setting).publish_state(id(valve_low_setting).state);
+          id(buzzer_volume).publish_state(id(buzzer_volume).state);
+
+          id(use_reduction_coefficient).publish_state(id(use_reduction_coefficient).state);
+          id(disable_upper_valve_closing).publish_state(id(disable_upper_valve_closing).state);
+
+      - component.update: wifi_signal_sensor
+      - component.update: uptime_sensor
+      - component.update: free_heap
+
+  # Main Control Logic (Called when temp changes)
+  - id: control_logic
+    mode: QUEUED
+    then:
+      - lambda: |-
+          // Helper function: Emergency Shutdown (refactored to avoid duplication)
+          auto emergency_shutdown = []() {
+              id(valve_high_output).turn_off();
+              id(last_valve_high_level) = 0;
+              id(valve_high_pulse_active) = false;
+              id(valve_low_output).turn_off();
+              id(last_valve_low_level) = 0;
+              id(valve_low_pulse_active) = false;
+              id(heater_output).set_level(0);
+              
+              // Reset UI components to 0
+              if (id(heat_power).state != 0) id(heat_power).publish_state(0);
+              if (id(valve_high_setting).state != 0) id(valve_high_setting).publish_state(0);
+              if (id(valve_low_setting).state != 0) id(valve_low_setting).publish_state(0);
+              
+              id(my_rtttl).stop();
+              id(distilling_status).publish_state(false);
+              id(heating_status).publish_state(false);
+              id(alarm_status).publish_state(false);
+          };
+
+          float t_col = id(column_temp).state;
+          float t_tank = id(tank_temp).state;
+
+          // Skip logic if WiFi is connecting (priority)
+          if (!id(wifi_component).is_connected() && esphome::millis() < 15000) {
+            return;
+          }
+
+          // Safety: Invalid sensor readings
+          if (std::isnan(t_col) || std::isnan(t_tank)) {
+            return; 
+          }
+
+           // 0. Startup Logic (Run once, wait for valid temp)
+           if (!id(startup_checked) && !std::isnan(t_tank)) {
+              if (t_tank < 70.0) {
+                  // Cold start - Reset to defaults
+                  ESP_LOGI("control", "Cold start detected (Tank < 70). Resetting defaults.");
+                  id(process_finished) = false;
+                  
+                  // Reset Numbers to defaults
+                  id(target_temp).publish_state(95.0);
+                  id(delta).publish_state(0.3);
+                  id(max_tank_temp).publish_state(99.0);
+                  id(coef_otbora).publish_state(1.0);
+                  if (id(valve_high_setting).state != 0) id(valve_high_setting).publish_state(0);
+                  if (id(valve_low_setting).state != 0) id(valve_low_setting).publish_state(0);
+                  if (id(heat_power).state != 0) id(heat_power).publish_state(0);
+                  
+                  // Reset Switches
+                  id(use_reduction_coefficient).publish_state(true);
+                  id(disable_upper_valve_closing).publish_state(false);
+              } else {
+                  // Hot start (Recovery) - Keep previous state
+                  ESP_LOGI("control", "Hot start detected (Tank >= 70). Restoring state.");
+              }
+             id(startup_checked) = true;
+             
+             // Trigger UI refresh after initialization
+             id(refresh_ui).execute();
+           }
+
+           // 1. Process Finished Check
+          if (id(process_finished)) {
+             emergency_shutdown(); // Use refactored function
+             
+             if (id(status_message).state != "DONE") {
+                id(status_message).publish_state("DONE");
+             }
+             return;
+          }
+
+          // 2. Max Tank Temp Check - Normal Process Completion
+          // This is NOT an emergency shutdown, but a planned end of distillation
+          if (t_tank >= id(max_tank_temp).state) {
+             ESP_LOGI("control", "Max Tank Temp reached (%.1f C). Process Finished.", t_tank);
+             id(process_finished) = true;
+             emergency_shutdown(); // Cleanly shut down all outputs
+             
+             if (id(status_message).state != "DONE") {
+                id(status_message).publish_state("DONE");
+             }
+             return;
+          }
+
+          // 3. Normal Operation
+          if (id(status_message).state != "RUNNING") {
+             id(status_message).publish_state("RUNNING");
+          }
+           id(heater_output).set_level(id(heat_power).state / 1023.0);
+
+           // Hysteresis Logic
+           // Target = 78.0, Delta = 0.3
+           // Close valves if >= 78.3 (Target + Delta)
+           // Open valves if <= 78.0 (Target)
+           // Between 78.0 and 78.3: Keep previous state
+
+           if (t_col >= (id(target_temp).state + id(delta).state)) {
+             // TOO HOT -> Close Valves (but check upper valve override)
+             
+             // Check if this is a NEW overheat event (Transition to Overheat)
+             if (!id(overheat_active)) {
+                 id(overheat_active) = true;
+                 
+                 // Reduction Logic: ALWAYS reduce if Tank > 84, regardless of switch
+                 if (t_tank >= 84.0) {
+                     float new_coef = id(coef_otbora).state * 0.9;
+                     id(coef_otbora).publish_state(new_coef);
+                     ESP_LOGI("control", "Overheat! Tank > 84. Reduced Coef to %.3f", new_coef);
+                 }
+             }
+             
+             // Upper valve logic with override
+             if (!id(disable_upper_valve_closing).state) {
+                 // Normal mode: close upper valve on overrun
+                 id(last_valve_high_level) = 0;
+             } else {
+                 // Override mode: keep upper valve open for continuous collection
+                 // Apply coefficient if switch is ON
+                 float current_coef = 1.0;
+                 if (id(use_reduction_coefficient).state) {
+                     current_coef = id(coef_otbora).state;
+                 }
+                 float vh = id(valve_high_setting).state * current_coef / 1023.0;
+                 id(last_valve_high_level) = vh;
+             }
+             
+             // Lower valve always closes on overrun
+             id(last_valve_low_level) = 0;
+             
+             // Update distilling status
+             bool vh_active = id(disable_upper_valve_closing).state && (id(valve_high_setting).state > 0);
+             id(distilling_status).publish_state(vh_active);
+           } 
+           
+           // Alarm Logic: Play if overheat is active (persists until cooled down)
+           if (id(overheat_active)) {
+              if (!id(my_rtttl).is_playing()) {
+                 id(my_rtttl).play("Imperial:d=4,o=5,b=100:e,e,e,8c,16g,e,8c,16g,e,p,b,b,b,8c6,16g,d#,8c,16g,e");
+                 id(alarm_status).publish_state(true);
+              }
+           }
+
+           if (t_col <= id(target_temp).state) {
+             // TEMP OK -> Open Valves
+             id(overheat_active) = false;
+
+             // Apply coefficient ONLY to LOW valve, if switch is ON
+             float current_coef = 1.0;
+             if (id(use_reduction_coefficient).state) {
+                 current_coef = id(coef_otbora).state;
+             }
+
+             // Upper valve: NO coefficient
+             float vh = id(valve_high_setting).state / 1023.0;
+             // Lower valve: WITH coefficient
+             float vl = id(valve_low_setting).state * current_coef / 1023.0;
+             
+             // Update level trackers - pulse interval handles actual GPIO control
+             id(last_valve_high_level) = vh;
+             id(last_valve_low_level) = vl;
+             
+             id(distilling_status).publish_state(vh > 0 || vl > 0);
+             
+             if (id(my_rtttl).is_playing()) {
+               id(my_rtttl).stop();
+               id(alarm_status).publish_state(false);
+             }
+           }
+
+# -------------------------------------------------------------------------
+# TEXT SENSORS
+# -------------------------------------------------------------------------
+text_sensor:
+  - platform: template
+    name: "Status Message"
+    id: status_message
+    icon: "mdi:message-text"
+
+  - platform: wifi_info
+    ip_address:
+      id: ip_address_sensor
+
+  - platform: debug
+    reset_reason:
+      name: "Reset Reason"
+      id: reset_reason
+
+  - platform: template
+    name: "Last Reset UI"
+    id: last_reset_ui
+    lambda: |-
+      if (id(reset_reason).state.empty()) {
+        return std::string("Unknown");
+      }
+      return id(reset_reason).state;
+    update_interval: 5s
+    icon: "mdi:restart"
+
+# -------------------------------------------------------------------------
+# OLED DISPLAY
+# -------------------------------------------------------------------------
+font:
+  - file: "gfonts://Roboto"
+    id: roboto
+    size: 14
+
+display:
+  - platform: ssd1306_i2c
+    id: oled_display
+    model: "SH1106 128x64"
+    address: 0x3C
+    lambda: |-
+      // Clear display buffer first to prevent artifacts
+      it.fill(COLOR_OFF);
+
+      // Uptime - Top left
+      int uptime_sec = (int)id(uptime_sensor).state;
+      int hours = uptime_sec / 3600;
+      int minutes = (uptime_sec % 3600) / 60;
+      it.printf(0, 0, id(roboto), "Up: %02d:%02d", hours, minutes);
+
+      // Heartbeat - Top right (blinks every second)
+      if ((esphome::millis() / 1000) % 2 == 0) {
+        it.filled_circle(120, 8, 4);
+      }
+
+      // IP Address - Middle
+      if (id(wifi_component).is_connected()) {
+         it.printf(0, 24, id(roboto), "IP: %s", id(ip_address_sensor).state.c_str());
+      } else {
+         it.print(0, 24, id(roboto), "Disconnected");
+      }
+
+      // Tank Temperature - Bottom
+      if (!std::isnan(id(tank_temp).state)) {
+        it.printf(0, 48, id(roboto), "Tank: %.0f C", id(tank_temp).state);
+      }
+
+interval:
+  - interval: 10s
+    then:
+      - lambda: |-
+          // Watchdog: Check if temp sensors have updated recently
+          if (esphome::millis() - id(last_temp_update) > 60000) {
+            ESP_LOGE("watchdog", "No temperature update for 60s! Shutting down.");
+            id(valve_high_output).turn_off();
+            id(last_valve_high_level) = 0;
+            id(valve_high_pulse_active) = false;
+            id(valve_low_output).turn_off();
+            id(last_valve_low_level) = 0;
+            id(valve_low_pulse_active) = false;
+            id(heater_output).set_level(0);
+            id(speaker_output).set_level(0);
+          }
+
+  # Volume Enforcer Loop
+  - interval: 50ms
+    then:
+      - lambda: |-
+          if (id(my_rtttl).is_playing()) {
+            // Cubic volume curve for better low-end control (Gamma Correction)
+            // Map 0-100% slider to 0-50% duty cycle (max volume for square wave)
+            float slider = id(buzzer_volume).state / 100.0;
+            float vol = (slider * slider * slider) * 0.5; 
+            
+            // Only update if level is different to avoid spamming (though set_level is usually cheap)
+            // But for RTTTL, we need to constantly re-apply it because RTTTL tries to set it to 50% duty
+            id(speaker_output).set_level(vol);
+          }
+
+  # Pulse Mode Controller for Valves
+  # Instead of PWM with short ON times at low values, we use fixed 500ms pulses
+  # with variable intervals. This ensures the valve fully opens each time.
+  # Formula: interval_ms = PULSE_WIDTH_MS * 1023 / value
+  - interval: 100ms
+    then:
+      - lambda: |-
+          const int PULSE_WIDTH_MS = 100;  // Fixed pulse duration (5x faster than original 500)
+          unsigned long now = esphome::millis();
+
+          // --- HIGH VALVE ---
+          float vh_value = id(last_valve_high_level) * 1023.0;  // Convert back to 0-1023
+
+          if (vh_value <= 0) {
+            if (id(valve_high_pulse_active)) {
+              id(valve_high_output).turn_off();
+              id(valve_high_pulse_active) = false;
+            }
+          } else if (vh_value >= 1023) {
+            if (!id(valve_high_pulse_active)) {
+              id(valve_high_output).turn_on();
+              id(valve_high_pulse_active) = true;
+            }
+          } else {
+            // Pulse mode
+            unsigned long interval_ms = (unsigned long)(PULSE_WIDTH_MS * 1023.0 / vh_value);
+            
+            if (!id(valve_high_pulse_active)) {
+              // Valve is OFF - check if it's time to start a new pulse
+              if (now >= id(valve_high_next_pulse)) {
+                id(valve_high_output).turn_on();
+                id(valve_high_pulse_active) = true;
+                id(valve_high_next_pulse) = now + interval_ms;
+              }
+            } else {
+              // Valve is ON - check if pulse duration has elapsed
+              if (now >= id(valve_high_next_pulse) - interval_ms + PULSE_WIDTH_MS) {
+                id(valve_high_output).turn_off();
+                id(valve_high_pulse_active) = false;
+              }
+            }
+          }
+
+          // --- LOW VALVE ---
+          float vl_value = id(last_valve_low_level) * 1023.0;  // Convert back to 0-1023
+
+          if (vl_value <= 0) {
+            if (id(valve_low_pulse_active)) {
+              id(valve_low_output).turn_off();
+              id(valve_low_pulse_active) = false;
+            }
+          } else if (vl_value >= 1023) {
+            if (!id(valve_low_pulse_active)) {
+              id(valve_low_output).turn_on();
+              id(valve_low_pulse_active) = true;
+            }
+          } else {
+            // Pulse mode
+            unsigned long interval_ms = (unsigned long)(PULSE_WIDTH_MS * 1023.0 / vl_value);
+            
+            if (!id(valve_low_pulse_active)) {
+              // Valve is OFF - check if it's time to start a new pulse
+              if (now >= id(valve_low_next_pulse)) {
+                id(valve_low_output).turn_on();
+                id(valve_low_pulse_active) = true;
+                id(valve_low_next_pulse) = now + interval_ms;
+              }
+            } else {
+              // Valve is ON - check if pulse duration has elapsed
+              if (now >= id(valve_low_next_pulse) - interval_ms + PULSE_WIDTH_MS) {
+                id(valve_low_output).turn_off();
+                id(valve_low_pulse_active) = false;
+              }
+            }
+          }
