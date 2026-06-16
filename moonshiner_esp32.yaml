@@ -142,6 +142,20 @@ globals:
     restore_value: false
     initial_value: "0.0"
 
+  # Last known values before watchdog shutdown (for auto-recovery)
+  - id: watchdog_heat_power
+    type: float
+    restore_value: false
+    initial_value: "0"
+  - id: watchdog_vh_setting
+    type: float
+    restore_value: false
+    initial_value: "0"
+  - id: watchdog_vl_setting
+    type: float
+    restore_value: false
+    initial_value: "0"
+
   # Pulse mode timers for valves (replaces slow_pwm)
   - id: valve_high_next_pulse
     type: unsigned long
@@ -459,19 +473,6 @@ sensor:
     id: wifi_signal_sensor
     update_interval: 60s
 
-  - platform: template
-    name: "Heap Frag"
-    id: heap_frag
-    lambda: |-
-      size_t free_heap = heap_caps_get_free_size(MALLOC_CAP_INTERNAL);
-      size_t largest_block = heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL);
-      if (free_heap == 0) return 0;
-      return 100.0 * (1.0 - (float)largest_block / (float)free_heap);
-    update_interval: 30s
-    unit_of_measurement: "%"
-    accuracy_decimals: 1
-    icon: "mdi:memory"
-
 # -------------------------------------------------------------------------
 # BINARY SENSORS (UI Status Flags)
 # -------------------------------------------------------------------------
@@ -492,6 +493,30 @@ binary_sensor:
 # CONTROL LOGIC
 # -------------------------------------------------------------------------
 script:
+  # Emergency shutdown — safe state for all outputs
+  - id: emergency_shutdown
+    mode: QUEUED
+    then:
+      - lambda: |-
+          id(valve_high_output).turn_off();
+          id(last_valve_high_level) = 0;
+          id(valve_high_pulse_active) = false;
+          id(valve_low_output).turn_off();
+          id(last_valve_low_level) = 0;
+          id(valve_low_pulse_active) = false;
+          id(heater_output).set_level(0);
+          id(speaker_output).set_level(0);
+
+          if (id(heat_power).state != 0) id(heat_power).publish_state(0);
+          if (id(valve_high_setting).state != 0) id(valve_high_setting).publish_state(0);
+          if (id(valve_low_setting).state != 0) id(valve_low_setting).publish_state(0);
+
+          id(my_rtttl).stop();
+          id(distilling_status).publish_state(false);
+          id(heating_status).publish_state(false);
+          id(alarm_status).publish_state(false);
+          ESP_LOGI("shutdown", "Emergency shutdown executed");
+
   # Force update of all UI elements
   - id: refresh_ui
     then:
@@ -519,27 +544,6 @@ script:
     mode: QUEUED
     then:
       - lambda: |-
-          // Helper function: Emergency Shutdown (refactored to avoid duplication)
-          auto emergency_shutdown = []() {
-              id(valve_high_output).turn_off();
-              id(last_valve_high_level) = 0;
-              id(valve_high_pulse_active) = false;
-              id(valve_low_output).turn_off();
-              id(last_valve_low_level) = 0;
-              id(valve_low_pulse_active) = false;
-              id(heater_output).set_level(0);
-              
-              // Reset UI components to 0
-              if (id(heat_power).state != 0) id(heat_power).publish_state(0);
-              if (id(valve_high_setting).state != 0) id(valve_high_setting).publish_state(0);
-              if (id(valve_low_setting).state != 0) id(valve_low_setting).publish_state(0);
-              
-              id(my_rtttl).stop();
-              id(distilling_status).publish_state(false);
-              id(heating_status).publish_state(false);
-              id(alarm_status).publish_state(false);
-          };
-
           float t_col = id(column_temp).state;
           float t_tank = id(tank_temp).state;
 
@@ -573,8 +577,9 @@ script:
                   id(use_reduction_coefficient).publish_state(true);
                   id(disable_upper_valve_closing).publish_state(false);
               } else {
-                  // Hot start (Recovery) - Keep previous state
-                  ESP_LOGI("control", "Hot start detected (Tank >= 70). Restoring state.");
+              // Hot start (Recovery) - Reset process to allow restarting
+              ESP_LOGI("control", "Hot start detected (Tank >= 70). Resetting process.");
+              id(process_finished) = false;
               }
              id(startup_checked) = true;
              
@@ -582,9 +587,21 @@ script:
              id(refresh_ui).execute();
            }
 
+           // 0.5 Auto-recovery: if watchdog shut us down and temps are back, restore
+           if (id(watchdog_heat_power) > 0 && t_tank < id(max_tank_temp).state) {
+               ESP_LOGI("control", "Watchdog recovery: restoring heat_power=%.0f, vh=%.0f, vl=%.0f",
+                        id(watchdog_heat_power), id(watchdog_vh_setting), id(watchdog_vl_setting));
+               id(heat_power).publish_state(id(watchdog_heat_power));
+               if (id(watchdog_vh_setting) > 0) id(valve_high_setting).publish_state(id(watchdog_vh_setting));
+               if (id(watchdog_vl_setting) > 0) id(valve_low_setting).publish_state(id(watchdog_vl_setting));
+               id(watchdog_heat_power) = 0;
+               id(watchdog_vh_setting) = 0;
+               id(watchdog_vl_setting) = 0;
+           }
+
            // 1. Process Finished Check
           if (id(process_finished)) {
-             emergency_shutdown(); // Use refactored function
+             id(emergency_shutdown).execute(); // Use refactored function
              
              if (id(status_message).state != "DONE") {
                 id(status_message).publish_state("DONE");
@@ -597,7 +614,7 @@ script:
           if (t_tank >= id(max_tank_temp).state) {
              ESP_LOGI("control", "Max Tank Temp reached (%.1f C). Process Finished.", t_tank);
              id(process_finished) = true;
-             emergency_shutdown(); // Cleanly shut down all outputs
+             id(emergency_shutdown).execute(); // Cleanly shut down all outputs
              
              if (id(status_message).state != "DONE") {
                 id(status_message).publish_state("DONE");
@@ -624,12 +641,12 @@ script:
              if (!id(overheat_active)) {
                  id(overheat_active) = true;
                  
-                 // Reduction Logic: ALWAYS reduce if Tank > 84, regardless of switch
-                 if (t_tank >= 84.0) {
-                     float new_coef = id(coef_otbora).state * 0.9;
-                     id(coef_otbora).publish_state(new_coef);
-                     ESP_LOGI("control", "Overheat! Tank > 84. Reduced Coef to %.3f", new_coef);
-                 }
+                  // Reduction Logic: reduce if Tank > 84 AND switch is enabled
+                  if (t_tank >= 84.0 && id(use_reduction_coefficient).state) {
+                      float new_coef = id(coef_otbora).state * 0.9;
+                      id(coef_otbora).publish_state(new_coef);
+                      ESP_LOGI("control", "Overheat! Tank > 84. Reduced Coef to %.3f", new_coef);
+                  }
              }
              
              // Upper valve logic with override
@@ -637,14 +654,9 @@ script:
                  // Normal mode: close upper valve on overrun
                  id(last_valve_high_level) = 0;
              } else {
-                 // Override mode: keep upper valve open for continuous collection
-                 // Apply coefficient if switch is ON
-                 float current_coef = 1.0;
-                 if (id(use_reduction_coefficient).state) {
-                     current_coef = id(coef_otbora).state;
-                 }
-                 float vh = id(valve_high_setting).state * current_coef / 1023.0;
-                 id(last_valve_high_level) = vh;
+                  // Override mode: keep upper valve open (coef_otbora applies to lower valve only)
+                  float vh = id(valve_high_setting).state / 1023.0;
+                  id(last_valve_high_level) = vh;
              }
              
              // Lower valve always closes on overrun
@@ -708,17 +720,6 @@ text_sensor:
       name: "Reset Reason"
       id: reset_reason
 
-  - platform: template
-    name: "Last Reset UI"
-    id: last_reset_ui
-    lambda: |-
-      if (id(reset_reason).state.empty()) {
-        return std::string("Unknown");
-      }
-      return id(reset_reason).state;
-    update_interval: 5s
-    icon: "mdi:restart"
-
 # -------------------------------------------------------------------------
 # OLED DISPLAY
 # -------------------------------------------------------------------------
@@ -766,14 +767,11 @@ interval:
           // Watchdog: Check if temp sensors have updated recently
           if (esphome::millis() - id(last_temp_update) > 60000) {
             ESP_LOGE("watchdog", "No temperature update for 60s! Shutting down.");
-            id(valve_high_output).turn_off();
-            id(last_valve_high_level) = 0;
-            id(valve_high_pulse_active) = false;
-            id(valve_low_output).turn_off();
-            id(last_valve_low_level) = 0;
-            id(valve_low_pulse_active) = false;
-            id(heater_output).set_level(0);
-            id(speaker_output).set_level(0);
+            // Save last values before shutdown for potential auto-recovery
+            id(watchdog_heat_power) = id(heat_power).state;
+            id(watchdog_vh_setting) = id(valve_high_setting).state;
+            id(watchdog_vl_setting) = id(valve_low_setting).state;
+            id(emergency_shutdown).execute();
           }
 
   # Volume Enforcer Loop
@@ -795,10 +793,10 @@ interval:
   # Instead of PWM with short ON times at low values, we use fixed 500ms pulses
   # with variable intervals. This ensures the valve fully opens each time.
   # Formula: interval_ms = PULSE_WIDTH_MS * 1023 / value
-  - interval: 100ms
+  - interval: 200ms
     then:
       - lambda: |-
-          const int PULSE_WIDTH_MS = 100;  // Fixed pulse duration (5x faster than original 500)
+          const int PULSE_WIDTH_MS = 200;  // Fixed pulse duration (5x faster than original 500)
           unsigned long now = esphome::millis();
 
           // --- HIGH VALVE ---
