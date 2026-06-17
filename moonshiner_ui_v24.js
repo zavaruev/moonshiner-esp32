@@ -16,6 +16,19 @@
             document.head.appendChild(m);
         }
 
+        // Themed favicon — distillation flask
+        const storedTheme = localStorage.getItem('theme');
+        const initialTheme = storedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const fg = initialTheme === 'dark' ? '#2997ff' : '#0066cc';
+        const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M19 4v7l8 12a4 4 0 0 1-3.33 6H8.33A4 4 0 0 1 5 23l8-12V4h6z" fill="none" stroke="' + fg + '" stroke-width="2" stroke-linejoin="round"/><path d="M5 20h22" stroke="' + fg + '" stroke-width="1.5"/><path d="M11 4h10" stroke="' + fg + '" stroke-width="2" stroke-linecap="round"/><rect x="9" y="16" width="14" height="6" rx="1" fill="' + fg + '" opacity="0.25"/></svg>';
+        const link = document.querySelector('link[rel="icon"]');
+        if (link) link.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+        else {
+            const l = document.createElement('link');
+            l.rel = 'icon'; l.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+            document.head.appendChild(l);
+        }
+
         const style = document.createElement('style');
         style.textContent = `
             esp-app, .esp-app, body > esp-app { display: none !important; }
@@ -365,6 +378,19 @@
             }
 
             .sensor-item.temp-hot .value { color: var(--danger); }
+
+            /* === Skeleton === */
+            .skel {
+                display: inline-block;
+                background: var(--divider);
+                border-radius: 4px;
+                color: transparent !important;
+                animation: skel-pulse 1.2s ease-in-out infinite;
+                min-width: 1.2em;
+                user-select: none;
+                pointer-events: none;
+            }
+            @keyframes skel-pulse { 50% { opacity: 0.3; } }
             .sensor-item.temp-warm .value { color: var(--warn); }
             .sensor-item.temp-cold .value { color: var(--primary); }
 
@@ -438,6 +464,11 @@
             }
 
             .btn-stepper:active { transform: scale(0.85); background: var(--primary); color: #fff; }
+
+            .btn-stepper.sending { animation: send-flash 0.4s ease; }
+            input.sending { border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(0,102,204,0.15) !important; }
+            [data-theme="dark"] input.sending { box-shadow: 0 0 0 3px rgba(41,151,255,0.15) !important; }
+            @keyframes send-flash { 0% { background: var(--primary); color: #fff; } 100% { background: var(--input-bg); color: var(--primary); } }
 
             input[type="number"]:focus {
                 border-color: var(--primary);
@@ -612,12 +643,12 @@
                         <h1>Moonshiner <span id="hb" style="color:var(--success);opacity:0.2;">●</span></h1>
                         <div class="meta">
                             <span id="conn-status"><span class="conn-dot disconnected"></span> Connecting...</span>
-                            <span>Up <span id="val-uptime">--</span></span>
-                            <span>WiFi <span id="val-wifi">--</span> dBm</span>
-                            <span>Heap <span id="val-heap">--</span></span>
+                            <span>Up <span id="val-uptime" class="skel">--</span></span>
+                            <span>WiFi <span id="val-wifi" class="skel">--</span> dBm</span>
+                            <span>Heap <span id="val-heap" class="skel">--</span></span>
                         </div>
                         <div class="meta" style="margin-top:1px;color:var(--ink-subtle);">
-                            Reset: <span id="val-reset">--</span>
+                            Reset: <span id="val-reset" class="skel">--</span>
                         </div>
                     </div>
                     <div class="top-bar-right">
@@ -640,13 +671,12 @@
 
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title">Column Control</h2>
+                    <h2 class="card-title">Temperatures</h2>
                 </div>
-
                 <div class="sensor-grid">
                     <div class="sensor-item" id="col-temp-card">
                         <div class="label">Column Temperature</div>
-                        <div class="value"><span id="val-col-temp">--</span></div>
+                        <div class="value"><span id="val-col-temp" class="skel">--</span></div>
                         <svg class="temp-ring" viewBox="0 0 44 44" id="col-temp-ring">
                             <circle cx="22" cy="22" r="18" fill="none" stroke="var(--divider)" stroke-width="3"/>
                             <circle cx="22" cy="22" r="18" fill="none" stroke="var(--primary)" stroke-width="3" stroke-dasharray="113" stroke-dashoffset="113" transform="rotate(-90 22 22)" id="col-temp-arc"/>
@@ -654,12 +684,18 @@
                     </div>
                     <div class="sensor-item" id="tank-temp-card">
                         <div class="label">Tank Temperature</div>
-                        <div class="value"><span id="val-tank-temp">--</span></div>
+                        <div class="value"><span id="val-tank-temp" class="skel">--</span></div>
                         <svg class="temp-ring" viewBox="0 0 44 44" id="tank-temp-ring">
                             <circle cx="22" cy="22" r="18" fill="none" stroke="var(--divider)" stroke-width="3"/>
                             <circle cx="22" cy="22" r="18" fill="none" stroke="var(--primary)" stroke-width="3" stroke-dasharray="113" stroke-dashoffset="113" transform="rotate(-90 22 22)" id="tank-temp-arc"/>
                         </svg>
                     </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Column Control</h2>
                 </div>
 
                 <div class="control-group">
@@ -764,10 +800,18 @@
             return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
 
+        function updateFavicon(theme) {
+            const fg = theme === 'dark' ? '#2997ff' : '#0066cc';
+            const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><path d="M19 4v7l8 12a4 4 0 0 1-3.33 6H8.33A4 4 0 0 1 5 23l8-12V4h6z" fill="none" stroke="' + fg + '" stroke-width="2" stroke-linejoin="round"/><path d="M5 20h22" stroke="' + fg + '" stroke-width="1.5"/><path d="M11 4h10" stroke="' + fg + '" stroke-width="2" stroke-linecap="round"/><rect x="9" y="16" width="14" height="6" rx="1" fill="' + fg + '" opacity="0.25"/></svg>';
+            const link = document.querySelector('link[rel="icon"]');
+            if (link) link.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+        }
+
         function applyTheme(theme) {
             document.documentElement.setAttribute('data-theme', theme);
             localStorage.setItem('theme', theme);
             icon.textContent = theme === 'dark' ? '\u2600' : '\u263E';
+            updateFavicon(theme);
         }
 
         applyTheme(getPreferredTheme());
@@ -810,6 +854,40 @@
             'binary_sensor-alarm_status': { st: 'st-alarm', cls: 'danger' }
         };
 
+        // Restore last known values from sessionStorage
+        function restoreSession() {
+            Object.keys(entities).forEach(function (id) {
+                const saved = (function () { try { return sessionStorage.getItem('ms_' + id); } catch (e) { return null; } })();
+                if (saved === null) return;
+                const cfg = entities[id];
+                if (cfg.el) {
+                    const el = document.getElementById(cfg.el);
+                    if (el) {
+                        const val = cfg.fmt ? cfg.fmt(saved) : saved;
+                        if (val !== '--' && val !== null) { el.textContent = val; el.classList.remove('skel'); }
+                    }
+                }
+                if (cfg.in) {
+                    const input = document.getElementById(cfg.in);
+                    if (input) {
+                        const num = parseFloat(saved);
+                        if (!isNaN(num) && num >= parseFloat(input.min) && num <= parseFloat(input.max)) {
+                            input.value = num;
+                            if (cfg.sl) {
+                                const slider = document.getElementById(cfg.sl);
+                                if (slider) slider.value = num;
+                            }
+                        }
+                    }
+                }
+                if (cfg.sw) {
+                    const sw = document.getElementById(cfg.sw);
+                    if (sw) sw.checked = (saved === 'ON');
+                }
+            });
+        }
+        restoreSession();
+
         function debounce(func, wait) {
             let timeout;
             return function (...args) {
@@ -828,8 +906,10 @@
 
                 if (input && apiPath) {
                     const debouncedUpdate = debounce((value) => {
+                        input.classList.add('sending');
                         fetch('/' + apiPath + '/set?value=' + value, { method: 'POST' })
-                            .catch(err => console.error('Failed to update ' + entityId + ':', err));
+                            .then(() => input.classList.remove('sending'))
+                            .catch(err => { input.classList.remove('sending'); console.error('Failed to update ' + entityId + ':', err); });
                     }, 400);
 
                     input.addEventListener('change', e => {
@@ -892,6 +972,9 @@
                 const step = parseFloat(this.dataset.step);
                 const input = document.getElementById(targetId);
                 if (!input) return;
+                this.classList.remove('sending');
+                void this.offsetWidth;
+                this.classList.add('sending');
                 const current = parseFloat(input.value) || 0;
                 const min = parseFloat(input.min) || 0;
                 const max = parseFloat(input.max) || 100;
@@ -948,6 +1031,9 @@
 
             const cfg = entities[data.id];
 
+            // Save to sessionStorage for fast restore on refresh
+            try { sessionStorage.setItem('ms_' + data.id, String(data.state)); } catch (e) {}
+
             if (cfg.el) {
                 const el = document.getElementById(cfg.el);
                 if (el) {
@@ -961,6 +1047,8 @@
                         }
                         el.classList.toggle('done', data.state === 'DONE');
                     }
+
+                    el.classList.remove('skel');
 
                     if (data.id === 'sensor-column_temperature' || data.id === 'sensor-tank_temperature') {
                         const n = parseFloat(data.state);
