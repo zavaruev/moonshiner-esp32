@@ -831,8 +831,8 @@
             'sensor-column_temperature': { el: 'val-col-temp', fmt: v => { const n = parseNum(v); return n !== null ? n.toFixed(1) + '\u00B0' : '--'; }, temp: 'val-col-temp' },
             'sensor-tank_temperature': { el: 'val-tank-temp', fmt: v => { const n = parseNum(v); return n !== null ? n.toFixed(1) + '\u00B0' : '--'; }, temp: 'val-tank-temp' },
             'sensor-uptime': { el: 'val-uptime', fmt: v => { const s = parseInt(v); return isNaN(s) ? '--' : Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm'; } },
-            'sensor-wifi_signal': { el: 'val-wifi', fmt: v => parseNum(v) !== null ? Math.round(parseNum(v)) : '--' },
-            'sensor-free_heap': { el: 'val-heap', fmt: v => parseNum(v) !== null ? Math.round(parseNum(v) / 1024) + 'KB' : '--' },
+            'sensor-wifi_signal': { el: 'val-wifi', fmt: v => { const n = parseNum(v); return n !== null ? Math.round(n) : '--'; } },
+            'sensor-free_heap': { el: 'val-heap', fmt: v => { const n = parseNum(v); return n !== null ? Math.round(n / 1024) + 'KB' : '--'; } },
 
             'text_sensor-status_message': { el: 'val-msg' },
             'text_sensor-reset_reason': { el: 'val-reset' },
@@ -857,7 +857,7 @@
         // Restore last known values from sessionStorage
         function restoreSession() {
             Object.keys(entities).forEach(function (id) {
-                const saved = (function () { try { return sessionStorage.getItem('ms_' + id); } catch (e) { return null; } })();
+                let saved; try { saved = sessionStorage.getItem('ms_' + id); } catch (e) { saved = null; }
                 if (saved === null) return;
                 const cfg = entities[id];
                 if (cfg.el) {
