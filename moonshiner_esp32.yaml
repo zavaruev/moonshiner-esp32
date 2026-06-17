@@ -796,71 +796,23 @@ interval:
   - interval: 200ms
     then:
       - lambda: |-
-          const int PULSE_WIDTH_MS = 200;  // Fixed pulse duration (5x faster than original 500)
+          const int PULSE_MS = 200;
           unsigned long now = esphome::millis();
 
-          // --- HIGH VALVE ---
-          float vh_value = id(last_valve_high_level) * 1023.0;  // Convert back to 0-1023
-
-          if (vh_value <= 0) {
-            if (id(valve_high_pulse_active)) {
-              id(valve_high_output).turn_off();
-              id(valve_high_pulse_active) = false;
-            }
-          } else if (vh_value >= 1023) {
-            if (!id(valve_high_pulse_active)) {
-              id(valve_high_output).turn_on();
-              id(valve_high_pulse_active) = true;
-            }
-          } else {
-            // Pulse mode
-            unsigned long interval_ms = (unsigned long)(PULSE_WIDTH_MS * 1023.0 / vh_value);
-            
-            if (!id(valve_high_pulse_active)) {
-              // Valve is OFF - check if it's time to start a new pulse
-              if (now >= id(valve_high_next_pulse)) {
-                id(valve_high_output).turn_on();
-                id(valve_high_pulse_active) = true;
-                id(valve_high_next_pulse) = now + interval_ms;
-              }
+          auto pulse_valve = [PULSE_MS, now](float level, bool& active, unsigned long& next_time, auto output) {
+            if (level <= 0.5f) {
+              if (active) { output->turn_off(); active = false; }
+            } else if (level >= 1022.5f) {
+              if (!active) { output->turn_on(); active = true; }
             } else {
-              // Valve is ON - check if pulse duration has elapsed
-              if (now >= id(valve_high_next_pulse) - interval_ms + PULSE_WIDTH_MS) {
-                id(valve_high_output).turn_off();
-                id(valve_high_pulse_active) = false;
+              unsigned long interval = (unsigned long)(PULSE_MS * 1023.0f / level);
+              if (!active) {
+                if (now >= next_time) { output->turn_on(); active = true; next_time = now + interval; }
+              } else {
+                if (now >= next_time - interval + PULSE_MS) { output->turn_off(); active = false; }
               }
             }
-          }
+          };
 
-          // --- LOW VALVE ---
-          float vl_value = id(last_valve_low_level) * 1023.0;  // Convert back to 0-1023
-
-          if (vl_value <= 0) {
-            if (id(valve_low_pulse_active)) {
-              id(valve_low_output).turn_off();
-              id(valve_low_pulse_active) = false;
-            }
-          } else if (vl_value >= 1023) {
-            if (!id(valve_low_pulse_active)) {
-              id(valve_low_output).turn_on();
-              id(valve_low_pulse_active) = true;
-            }
-          } else {
-            // Pulse mode
-            unsigned long interval_ms = (unsigned long)(PULSE_WIDTH_MS * 1023.0 / vl_value);
-            
-            if (!id(valve_low_pulse_active)) {
-              // Valve is OFF - check if it's time to start a new pulse
-              if (now >= id(valve_low_next_pulse)) {
-                id(valve_low_output).turn_on();
-                id(valve_low_pulse_active) = true;
-                id(valve_low_next_pulse) = now + interval_ms;
-              }
-            } else {
-              // Valve is ON - check if pulse duration has elapsed
-              if (now >= id(valve_low_next_pulse) - interval_ms + PULSE_WIDTH_MS) {
-                id(valve_low_output).turn_off();
-                id(valve_low_pulse_active) = false;
-              }
-            }
-          }
+          pulse_valve(id(last_valve_high_level) * 1023.0f, id(valve_high_pulse_active), id(valve_high_next_pulse), id(valve_high_output));
+          pulse_valve(id(last_valve_low_level) * 1023.0f, id(valve_low_pulse_active), id(valve_low_next_pulse), id(valve_low_output));
