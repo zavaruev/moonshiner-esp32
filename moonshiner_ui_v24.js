@@ -180,7 +180,7 @@
             .top-bar-right {
                 display: flex;
                 align-items: center;
-                gap: 8px;
+                gap: 10px;
                 flex-shrink: 0;
             }
 
@@ -619,30 +619,31 @@
             .switch input:checked + .track { background: var(--primary); }
             .switch input:checked + .track::before { transform: translateX(18px); }
 
-            /* === Volume (mini header) === */
+            /* === Volume (mini top-bar) === */
             .vol-mini {
                 display: flex;
                 align-items: center;
-                gap: 6px;
+                gap: 5px;
+                padding: 0 4px;
             }
             .vol-mini .vol-icon {
-                font-size: 14px;
+                font-size: 13px;
                 color: var(--ink-muted);
                 cursor: pointer;
                 transition: color 0.15s;
             }
             .vol-mini .vol-icon:hover { color: var(--primary); }
             .vol-mini input[type="range"] {
-                width: 80px;
+                width: 64px;
                 height: 4px;
             }
             .vol-mini .vol-val {
-                font-size: 12px;
-                font-weight: 500;
+                font-size: 11px;
+                font-weight: 600;
                 color: var(--ink-muted);
-                min-width: 24px;
-                text-align: right;
                 font-variant-numeric: tabular-nums;
+                min-width: 22px;
+                text-align: right;
             }
 
             /* === Responsive === */
@@ -700,14 +701,20 @@
                         </div>
                     </div>
                     <div class="top-bar-right">
-                        <button class="theme-toggle" id="btn-theme" aria-label="Toggle theme">
-                            <span class="icon">&#9790;</span>
-                        </button>
                         <div class="badge-row">
                             <span id="st-distilling" class="badge">Distilling</span>
                             <span id="st-heating" class="badge">Heating</span>
                             <span id="st-alarm" class="badge">Alarm</span>
                         </div>
+                        <div class="vol-mini">
+                            <span class="vol-icon" id="vol-icon">&#9835;</span>
+                            <input type="range" id="in-vol-slider" min="0" max="100" step="1" value="100">
+                            <span class="vol-val" id="vol-val">100</span>
+                            <input type="number" id="in-vol" value="100" style="display:none;">
+                        </div>
+                        <button class="theme-toggle" id="btn-theme" aria-label="Toggle theme">
+                            <span class="icon">&#9790;</span>
+                        </button>
                     </div>
                 </div>
 
@@ -786,12 +793,6 @@
             <div class="card">
                 <div class="card-header">
                     <h2 class="card-title">Valves & Heater</h2>
-                    <div class="vol-mini">
-                        <span class="vol-icon" id="vol-icon">&#9835;</span>
-                        <input type="range" id="in-vol-slider" min="0" max="100" step="1" value="100">
-                        <span class="vol-val" id="vol-val">100</span>
-                        <input type="number" id="in-vol" value="100" style="display:none;">
-                    </div>
                 </div>
 
                 <div class="control-group">
@@ -837,7 +838,7 @@
                                 <div class="ss-marker" style="left:63.6%"></div>
                                 <div class="ss-label" style="left:63.6%" data-target="in-heat" data-value="1750">Working Power</div>
                                 <div class="ss-marker" style="left:100%"></div>
-                                <div class="ss-label" style="left:100%;transform:translateX(-100%)" data-target="in-heat" data-value="2750">Heating</div>
+                                <div class="ss-label" style="left:100%;transform:translateX(-100%)" data-target="in-heat" data-value="2750">Preheat</div>
                             </div>
                         </div>
                     </div>
@@ -868,9 +869,9 @@
             <div class="card" id="diag-card" style="position:relative;">
                 <div class="card-header" style="margin-bottom:8px;cursor:pointer;" id="diag-toggle">
                     <h2 class="card-title" style="font-size:16px;">&#9881; Diagnostics</h2>
-                    <span id="diag-arrow" style="color:var(--ink-muted);font-size:14px;">&#9660;</span>
+                    <span id="diag-arrow" style="color:var(--ink-muted);font-size:14px;">&#9656;</span>
                 </div>
-                <div id="diag-body">
+                <div id="diag-body" style="display:none">
                     <div class="sensor-grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
                         <div class="sensor-item" style="padding:8px;">
                             <div class="label">Connection</div>
