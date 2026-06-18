@@ -430,7 +430,7 @@ sensor:
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 4
-    update_interval: 1s
+    update_interval: 5s
     filters:
       - median:
           window_size: 5
@@ -453,7 +453,7 @@ sensor:
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 4
-    update_interval: 1s
+    update_interval: 5s
     filters:
       - median:
           window_size: 5
