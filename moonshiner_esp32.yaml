@@ -93,8 +93,6 @@ i2c:
   id: i2c_bus
   sda: GPIO21
   scl: GPIO22
-  scan: false # Don't scan bus on boot (can hang with flaky display)
-  frequency: 10kHz # Slow but stable on 2m wires with cheap SH1106
 
 # OneWire Bus for DS18B20 Temperature Sensors
 # NOTE: 2m wires — needs 4.7kΩ pull-up to 3.3V for reliable reads
@@ -182,6 +180,16 @@ globals:
     type: bool
     restore_value: false
     initial_value: "false"
+
+  # Display reentry guard (set true while drawing, skip if still stuck)
+  - id: display_busy
+    type: bool
+    restore_value: false
+    initial_value: "false"
+  - id: display_busy_since
+    type: unsigned long
+    restore_value: false
+    initial_value: "0"
 
 # -------------------------------------------------------------------------
 # USER INPUTS (Numbers)
@@ -756,6 +764,20 @@ display:
     address: 0x3C
     update_interval: 1s
     lambda: |-
+      // Reentry guard: skip if previous draw is still stuck on I2C
+      if (id(display_busy)) {
+        if (esphome::millis() - id(display_busy_since) > 3000) {
+          char _d[64];
+          snprintf(_d, sizeof(_d), "Display stuck >3s, skipped draw");
+          id(diag_msg).publish_state(_d);
+          ESP_LOGE("display", "Display stuck for >3s, skipping draw");
+        }
+        id(display_busy_since) = esphome::millis();
+        return;
+      }
+      id(display_busy) = true;
+      id(display_busy_since) = esphome::millis();
+
       unsigned long _disp_start = esphome::millis();
 
       // Clear display buffer first to prevent artifacts
@@ -804,6 +826,8 @@ display:
           _last_diag_log = esphome::millis();
         }
       }
+
+      id(display_busy) = false;
 
 interval:
   - interval: 10s
