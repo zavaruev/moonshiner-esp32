@@ -429,6 +429,20 @@
                 gap: 10px;
             }
 
+            .number-wrap {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+            }
+            .number-unit {
+                position: absolute;
+                right: 8px;
+                font-size: 11px;
+                font-weight: 400;
+                color: var(--ink-muted);
+                pointer-events: none;
+                line-height: 1;
+            }
             input[type="number"] {
                 font-family: var(--font-text);
                 font-size: 15px;
@@ -442,6 +456,9 @@
                 text-align: center;
                 outline: none;
                 transition: border-color 0.2s;
+            }
+            input[type="number"].has-unit {
+                padding-right: 24px;
             }
 
             .btn-stepper {
@@ -806,7 +823,10 @@
                     <div class="control-item full">
                         <label>Heater Power</label>
                         <div class="input-row">
-                            <input type="number" id="in-heat" step="10" min="0" max="2750" value="0">
+                            <div class="number-wrap">
+                                <input type="number" id="in-heat" class="has-unit" step="10" min="0" max="2750" value="0">
+                                <span class="number-unit">W</span>
+                            </div>
                             <div class="slider-wrap">
                                 <input type="range" id="in-heat-slider" min="0" max="2750" step="10" value="0">
                                 <div class="ss-marker" style="left:63.6%"></div>
