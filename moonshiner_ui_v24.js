@@ -165,6 +165,7 @@
             .top-bar-left {
                 display: flex;
                 align-items: center;
+                gap: 8px;
             }
 
             .top-bar-right {
@@ -209,6 +210,16 @@
                 color: #fff;
             }
 
+            .badge-status {
+                background: var(--ink-muted);
+                color: var(--card-bg);
+            }
+
+            .badge-status.done {
+                background: var(--primary);
+                color: #fff;
+            }
+
             .badge.on {
                 background: rgba(0, 102, 204, 0.12);
                 color: var(--primary);
@@ -230,24 +241,6 @@
             @keyframes pulse { 50% { opacity: 0.5; } }
 
             /* === Status Message === */
-            .status-bar {
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 8px;
-                flex-wrap: wrap;
-            }
-
-            .status-msg {
-                font-family: var(--font-display);
-                font-size: 13px;
-                font-weight: 500;
-                letter-spacing: 0;
-                color: var(--ink);
-            }
-
-            .status-msg.done { color: var(--primary); }
-
             /* === Buttons === */
             .btn {
                 font-family: var(--font-text);
@@ -675,8 +668,6 @@
                 .control-group { grid-template-columns: 1fr; }
 
                 .sensor-item .value { font-size: 24px; }
-
-                .status-bar { flex-direction: column; align-items: flex-start; }
             }
 
             @media (max-width: 419px) {
@@ -711,7 +702,8 @@
             <div class="card">
                 <div class="top-bar">
                     <div class="top-bar-left">
-                        <span class="status-msg" id="val-msg">Connecting...</span>
+                        <span class="badge badge-status" id="val-msg">Connecting...</span>
+                        <button class="btn btn-danger" id="btn-restart" style="display:none;padding:4px 12px;font-size:11px;">Restart</button>
                     </div>
                     <div class="top-bar-right">
                         <div class="top-bar-utils">
@@ -733,13 +725,9 @@
                         </div>
                     </div>
                 </div>
-
-                <div style="margin-top:8px;">
-                    <button class="btn btn-danger" id="btn-restart" style="display:none;">Restart</button>
-                </div>
             </div>
 
-            <div class="card">
+            <div class="card" style="padding:16px">
                 <div class="card-header" style="margin-bottom:12px">
                     <h2 class="card-title">Temperatures</h2>
                 </div>
