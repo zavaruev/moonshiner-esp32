@@ -527,17 +527,17 @@
             .ss-marker {
                 position: absolute;
                 top: 50%;
-                width: 1px;
-                height: 14px;
+                width: 4px;
+                height: 4px;
                 background: var(--primary);
                 transform: translate(-50%, -50%);
                 pointer-events: none;
-                opacity: 0.35;
-                border-radius: 0.5px;
+                opacity: 0.3;
+                border-radius: 50%;
             }
             .ss-label {
                 position: absolute;
-                top: calc(50% + 14px);
+                top: calc(50% + 10px);
                 left: 50%;
                 transform: translateX(-50%);
                 font-family: var(--font-text);
@@ -551,7 +551,6 @@
                 transition: color 0.15s;
             }
             .ss-label:hover { color: var(--primary); }
-            .ss-label-up { top: calc(50% - 14px); }
 
             .switch-row {
                 display: flex;
@@ -787,7 +786,7 @@
                             <div class="slider-wrap">
                                 <input type="range" id="in-vh-slider" min="0" max="1023" step="1" value="0">
                                 <div class="ss-marker" style="left:2%"></div>
-                                <div class="ss-label ss-label-up" style="left:2%" data-target="in-vh" data-value="20">Heads</div>
+                                <div class="ss-label" style="left:2%" data-target="in-vh" data-value="20">Heads</div>
                                 <div class="ss-marker" style="left:21.5%"></div>
                                 <div class="ss-label" style="left:21.5%" data-target="in-vh" data-value="220">Hearts</div>
                             </div>
@@ -813,7 +812,7 @@
                                 <div class="ss-marker" style="left:63.6%"></div>
                                 <div class="ss-label" style="left:63.6%" data-target="in-heat" data-value="1750">Working Power</div>
                                 <div class="ss-marker" style="left:100%"></div>
-                                <div class="ss-label ss-label-up" style="left:100%;transform:translateX(-100%)" data-target="in-heat" data-value="2750">Heating</div>
+                                <div class="ss-label" style="left:100%;transform:translateX(-100%)" data-target="in-heat" data-value="2750">Heating</div>
                             </div>
                         </div>
                     </div>
