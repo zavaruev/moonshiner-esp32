@@ -801,8 +801,8 @@
                     </div>
                 </div>
 
-                <div style="border-top:1px solid var(--divider-soft);margin-top:16px;padding-top:12px;">
-                    <div class="switch-row">
+                <div style="margin-top:8px;">
+                    <div class="switch-row" style="padding:4px 0">
                         <label for="sw-reduction">Use Reduction</label>
                         <label class="switch">
                             <input type="checkbox" id="sw-reduction" checked>
@@ -876,8 +876,8 @@
                     </div>
                 </div>
 
-                <div style="border-top:1px solid var(--divider-soft);margin-top:16px;padding-top:12px;">
-                    <div class="switch-row">
+                <div style="margin-top:8px;">
+                    <div class="switch-row" style="padding:4px 0">
                         <label for="sw-disable-close">Disable Upper Valve Closing</label>
                         <label class="switch">
                             <input type="checkbox" id="sw-disable-close">
