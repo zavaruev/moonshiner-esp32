@@ -19,9 +19,7 @@ esphome:
         - lambda: |-
             id(boot_counter) += 1;
             ESP_LOGW("boot", "Boot #%d", id(boot_counter));
-            char _diag_buf[64];
-            snprintf(_diag_buf, sizeof(_diag_buf), "Boot #%d, Reason: %s", id(boot_counter), id(reset_reason).state.c_str());
-            id(diag_msg).publish_state(_diag_buf);
+            id(diag_msg).publish_state("Booting...");
         - output.turn_off: heater_output
         - output.turn_off: valve_high_output
         - output.turn_off: valve_low_output
@@ -594,11 +592,16 @@ script:
               ESP_LOGI("control", "Hot start detected (Tank >= 70). Resetting process.");
               id(process_finished) = false;
               }
-             id(startup_checked) = true;
-             
-             // Trigger UI refresh after initialization
-             id(refresh_ui).execute();
-           }
+              id(startup_checked) = true;
+              
+              // Log diagnostic info now that reset_reason is populated
+              char _d[64];
+              snprintf(_d, sizeof(_d), "Boot #%d, Reason: %s", (int)id(boot_counter), id(reset_reason).state.c_str());
+              id(diag_msg).publish_state(_d);
+              
+              // Trigger UI refresh after initialization
+              id(refresh_ui).execute();
+            }
 
            // 0.5 Auto-recovery: if watchdog shut us down and temps are back, restore
            if (id(watchdog_heat_power) > 0 && t_tank < id(max_tank_temp).state) {

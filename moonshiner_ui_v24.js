@@ -1125,31 +1125,31 @@
                         addLog(String(data.state));
                     }
 
-                    if (data.id === 'text_sensor-reset_reason') {
-                        var resetLog = document.getElementById('val-reset-log');
-                        if (resetLog) resetLog.textContent = String(data.state);
-                    }
-
-                    // Mirror key values to diagnostics card
-                    if (data.id === 'sensor-uptime') {
-                        var du = document.getElementById('val-diag-uptime');
-                        if (du) du.textContent = newText;
-                    }
-                    if (data.id === 'sensor-wifi_signal') {
-                        var dw = document.getElementById('val-diag-wifi');
-                        if (dw) dw.textContent = newText;
-                    }
-                    if (data.id === 'sensor-free_heap') {
-                        var dh = document.getElementById('val-diag-heap');
-                        if (dh) dh.textContent = newText;
-                    }
-
                     el.classList.remove('skel');
 
                     if (data.id === 'sensor-column_temperature' || data.id === 'sensor-tank_temperature') {
                         const n = parseFloat(data.state);
                         if (!isNaN(n)) updateTempVisuals(data.id, n);
                     }
+                }
+
+                // Mirror to diagnostics card (runs even if old header element is gone)
+                var _dt = cfg.fmt ? cfg.fmt(data.state) : data.state;
+                if (data.id === 'text_sensor-reset_reason') {
+                    var _rl = document.getElementById('val-reset-log');
+                    if (_rl) _rl.textContent = String(data.state);
+                }
+                if (data.id === 'sensor-uptime') {
+                    var _du = document.getElementById('val-diag-uptime');
+                    if (_du) _du.textContent = _dt;
+                }
+                if (data.id === 'sensor-wifi_signal') {
+                    var _dw = document.getElementById('val-diag-wifi');
+                    if (_dw) _dw.textContent = _dt;
+                }
+                if (data.id === 'sensor-free_heap') {
+                    var _dh = document.getElementById('val-diag-heap');
+                    if (_dh) _dh.textContent = _dt;
                 }
             }
 
