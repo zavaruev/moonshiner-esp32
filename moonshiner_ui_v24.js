@@ -702,6 +702,16 @@
             <div class="card">
                 <div class="top-bar">
                     <div class="top-bar-left">
+                        <div class="badge-row">
+                            <span id="conn-status" class="badge badge-conn disconnected">Connecting...</span>
+                            <span class="badge badge-status" id="val-msg">Connecting...</span>
+                            <span id="st-distilling" class="badge">Distilling</span>
+                            <span id="st-heating" class="badge">Heating</span>
+                            <span id="st-alarm" class="badge">Alarm</span>
+                        </div>
+                        <button class="btn btn-danger" id="btn-restart" style="display:none;padding:4px 12px;font-size:11px;">Restart</button>
+                    </div>
+                    <div class="top-bar-right">
                         <div class="vol-mini">
                             <span class="vol-icon" id="vol-icon">&#9835;</span>
                             <input type="range" id="in-vol-slider" min="0" max="100" step="1" value="100">
@@ -711,16 +721,6 @@
                         <button class="theme-toggle" id="btn-theme" aria-label="Toggle theme">
                             <span class="icon">&#9790;</span>
                         </button>
-                        <button class="btn btn-danger" id="btn-restart" style="display:none;padding:4px 12px;font-size:11px;">Restart</button>
-                    </div>
-                    <div class="top-bar-right">
-                        <div class="badge-row">
-                            <span id="conn-status" class="badge badge-conn disconnected">Connecting...</span>
-                            <span class="badge badge-status" id="val-msg">Connecting...</span>
-                            <span id="st-distilling" class="badge">Distilling</span>
-                            <span id="st-heating" class="badge">Heating</span>
-                            <span id="st-alarm" class="badge">Alarm</span>
-                        </div>
                     </div>
                 </div>
             </div>
