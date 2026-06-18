@@ -61,3 +61,14 @@ rsync -av --exclude='.esphome/build/' -e ssh alexander@192.168.22.102:/mnt/media
 - SH1106 chips sold as "SSD1306" — use model `SH1106 128x64` not `SSD1306 128x64`
 - UI v23→v24 fixed: debounce DDOS (hundreds of req/s on slider), default values disappearing (value-with-units parsing), entity alias 404s
 - Pulse mode replaced slow_pwm in the main config because solenoid valves need ≥100ms pulse to open fully
+
+## Rollback to last known-good version
+
+If current firmware breaks:
+
+```bash
+git checkout v1.05
+rsync -av --exclude='.esphome/' /home/alexander/Desktop/MoonshinerNew/moonshiner_esp32.yaml /home/alexander/Desktop/MoonshinerNew/moonshiner_ui_v24.js alexander@192.168.22.102:/mnt/media/docker-compose/esphome/config/
+ssh alexander@192.168.22.102 "cd /mnt/media/docker-compose/esphome/config && docker exec esphome esphome compile moonshiner_esp32.yaml 2>&1 | tail -5"
+ssh alexander@192.168.22.102 "cd /mnt/media/docker-compose/esphome/config && docker exec esphome esphome upload moonshiner_esp32.yaml --device 192.168.22.231 2>&1 | tail -3"
+```
