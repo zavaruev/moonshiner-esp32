@@ -125,7 +125,7 @@
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                margin-bottom: 20px;
+                margin-bottom: 14px;
                 flex-wrap: wrap;
                 gap: 12px;
             }
@@ -179,9 +179,15 @@
 
             .top-bar-right {
                 display: flex;
-                align-items: center;
-                gap: 10px;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 6px;
                 flex-shrink: 0;
+            }
+            .top-bar-utils {
+                display: flex;
+                align-items: center;
+                gap: 6px;
             }
 
             .conn-dot {
@@ -315,8 +321,8 @@
 
             .theme-toggle {
                 position: relative;
-                width: 44px;
-                height: 44px;
+                width: 32px;
+                height: 32px;
                 padding: 0;
                 border-radius: 50%;
                 border: 1px solid var(--card-border);
@@ -325,7 +331,7 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 20px;
+                font-size: 15px;
                 transition: all 0.2s;
                 flex-shrink: 0;
             }
@@ -338,14 +344,14 @@
             .sensor-grid {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                gap: 12px;
-                margin-bottom: 20px;
+                gap: 8px;
+                margin-bottom: 0;
             }
 
             .sensor-item {
                 background: var(--input-bg);
                 border-radius: var(--radius-md);
-                padding: 14px 16px;
+                padding: 10px 12px;
                 text-align: center;
                 border: 1px solid var(--card-border);
                 position: relative;
@@ -353,16 +359,16 @@
             }
 
             .sensor-item .label {
-                font-size: 12px;
+                font-size: 11px;
                 font-weight: 400;
                 color: var(--ink-muted);
                 letter-spacing: 0;
-                margin-bottom: 2px;
+                margin-bottom: 1px;
             }
 
             .sensor-item .value {
                 font-family: var(--font-display);
-                font-size: 32px;
+                font-size: 22px;
                 font-weight: 600;
                 letter-spacing: -0.374px;
                 color: var(--ink);
@@ -370,11 +376,11 @@
 
             .sensor-item .temp-ring {
                 position: absolute;
-                bottom: 6px;
-                right: 8px;
-                width: 44px;
-                height: 44px;
-                opacity: 0.3;
+                bottom: 4px;
+                right: 6px;
+                width: 34px;
+                height: 34px;
+                opacity: 0.25;
             }
 
             .sensor-item.temp-hot .value { color: var(--danger); }
@@ -485,6 +491,23 @@
             .btn-stepper.sending { animation: send-flash 0.4s ease; }
             input.sending { border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(0,102,204,0.15) !important; }
             [data-theme="dark"] input.sending { box-shadow: 0 0 0 3px rgba(41,151,255,0.15) !important; }
+            .delta-inline {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                flex-shrink: 0;
+            }
+            .delta-inline .delta-label {
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--ink-muted);
+            }
+            .delta-inline input[type="number"] {
+                width: 44px;
+                padding: 6px 4px;
+                font-size: 13px;
+            }
+
             @keyframes send-flash { 0% { background: var(--primary); color: #fff; } 100% { background: var(--input-bg); color: var(--primary); } }
 
             input[type="number"]:focus {
@@ -623,26 +646,25 @@
             .vol-mini {
                 display: flex;
                 align-items: center;
-                gap: 5px;
-                padding: 0 4px;
+                gap: 4px;
             }
             .vol-mini .vol-icon {
-                font-size: 13px;
+                font-size: 12px;
                 color: var(--ink-muted);
                 cursor: pointer;
                 transition: color 0.15s;
             }
             .vol-mini .vol-icon:hover { color: var(--primary); }
             .vol-mini input[type="range"] {
-                width: 64px;
-                height: 4px;
+                width: 52px;
+                height: 3px;
             }
             .vol-mini .vol-val {
-                font-size: 11px;
+                font-size: 10px;
                 font-weight: 600;
                 color: var(--ink-muted);
                 font-variant-numeric: tabular-nums;
-                min-width: 22px;
+                min-width: 18px;
                 text-align: right;
             }
 
@@ -701,20 +723,22 @@
                         </div>
                     </div>
                     <div class="top-bar-right">
+                        <div class="top-bar-utils">
+                            <div class="vol-mini">
+                                <span class="vol-icon" id="vol-icon">&#9835;</span>
+                                <input type="range" id="in-vol-slider" min="0" max="100" step="1" value="100">
+                                <span class="vol-val" id="vol-val">100</span>
+                                <input type="number" id="in-vol" value="100" style="display:none;">
+                            </div>
+                            <button class="theme-toggle" id="btn-theme" aria-label="Toggle theme">
+                                <span class="icon">&#9790;</span>
+                            </button>
+                        </div>
                         <div class="badge-row">
                             <span id="st-distilling" class="badge">Distilling</span>
                             <span id="st-heating" class="badge">Heating</span>
                             <span id="st-alarm" class="badge">Alarm</span>
                         </div>
-                        <div class="vol-mini">
-                            <span class="vol-icon" id="vol-icon">&#9835;</span>
-                            <input type="range" id="in-vol-slider" min="0" max="100" step="1" value="100">
-                            <span class="vol-val" id="vol-val">100</span>
-                            <input type="number" id="in-vol" value="100" style="display:none;">
-                        </div>
-                        <button class="theme-toggle" id="btn-theme" aria-label="Toggle theme">
-                            <span class="icon">&#9790;</span>
-                        </button>
                     </div>
                 </div>
 
@@ -725,24 +749,24 @@
             </div>
 
             <div class="card">
-                <div class="card-header">
+                <div class="card-header" style="margin-bottom:12px">
                     <h2 class="card-title">Temperatures</h2>
                 </div>
                 <div class="sensor-grid">
                     <div class="sensor-item" id="col-temp-card">
-                        <div class="label">Column Temperature</div>
+                        <div class="label">Column</div>
                         <div class="value"><span id="val-col-temp" class="skel">--</span></div>
-                        <svg class="temp-ring" viewBox="0 0 44 44" id="col-temp-ring">
-                            <circle cx="22" cy="22" r="18" fill="none" stroke="var(--divider)" stroke-width="3"/>
-                            <circle cx="22" cy="22" r="18" fill="none" stroke="var(--primary)" stroke-width="3" stroke-dasharray="113" stroke-dashoffset="113" transform="rotate(-90 22 22)" id="col-temp-arc"/>
+                        <svg class="temp-ring" viewBox="0 0 34 34" id="col-temp-ring">
+                            <circle cx="17" cy="17" r="14" fill="none" stroke="var(--divider)" stroke-width="2.5"/>
+                            <circle cx="17" cy="17" r="14" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-dasharray="88" stroke-dashoffset="88" transform="rotate(-90 17 17)" id="col-temp-arc"/>
                         </svg>
                     </div>
                     <div class="sensor-item" id="tank-temp-card">
-                        <div class="label">Tank Temperature</div>
+                        <div class="label">Tank</div>
                         <div class="value"><span id="val-tank-temp" class="skel">--</span></div>
-                        <svg class="temp-ring" viewBox="0 0 44 44" id="tank-temp-ring">
-                            <circle cx="22" cy="22" r="18" fill="none" stroke="var(--divider)" stroke-width="3"/>
-                            <circle cx="22" cy="22" r="18" fill="none" stroke="var(--primary)" stroke-width="3" stroke-dasharray="113" stroke-dashoffset="113" transform="rotate(-90 22 22)" id="tank-temp-arc"/>
+                        <svg class="temp-ring" viewBox="0 0 34 34" id="tank-temp-ring">
+                            <circle cx="17" cy="17" r="14" fill="none" stroke="var(--divider)" stroke-width="2.5"/>
+                            <circle cx="17" cy="17" r="14" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-dasharray="88" stroke-dashoffset="88" transform="rotate(-90 17 17)" id="tank-temp-arc"/>
                         </svg>
                     </div>
                 </div>
@@ -761,12 +785,10 @@
                             <input type="number" id="in-target" step="0.01" min="0" max="100" value="95.00">
                             <input type="range" id="in-target-slider" min="0" max="100" step="0.01" value="95.00">
                             <button class="btn btn-stepper" data-stepper="in-target" data-step="0.1">&plus;</button>
-                        </div>
-                    </div>
-                    <div class="control-item">
-                        <label>Delta</label>
-                        <div class="input-row">
-                            <input type="number" id="in-delta" step="0.1" min="0" max="5" value="0.3">
+                            <div class="delta-inline">
+                                <span class="delta-label">Δ</span>
+                                <input type="number" id="in-delta" step="0.1" min="0" max="5" value="0.3">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1150,7 +1172,7 @@
             if (!card || tempC === null) return;
             card.classList.remove('temp-cold', 'temp-warm', 'temp-hot');
             const frac = Math.min(1, Math.max(0, (tempC - 20) / 80));
-            const circ = 113;
+            const circ = 88;
             if (arc) arc.setAttribute('stroke-dashoffset', circ - frac * circ);
             const color = tempC < 60 ? 'var(--primary)' : tempC < 80 ? 'var(--warn)' : 'var(--danger)';
             if (arc) arc.setAttribute('stroke', color);
