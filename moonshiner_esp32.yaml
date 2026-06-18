@@ -431,7 +431,7 @@ sensor:
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 0
-    parasitic_power: true
+    resolution: 9 # 9-bit = 94ms conversion (vs 750ms for 12-bit), stable on long wires
     update_interval: 5s
     filters:
       - median:
@@ -455,7 +455,7 @@ sensor:
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 0
-    parasitic_power: true
+    resolution: 9 # 9-bit = 94ms conversion, stable on long wires
     update_interval: 5s
     filters:
       - median:
