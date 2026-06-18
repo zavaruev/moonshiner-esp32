@@ -1164,11 +1164,12 @@
                         }
                         const numVal = parseFloat(numericValue);
                         if (!isNaN(numVal)) {
-                            input.value = numericValue;
+                            const displayVal = numVal.toString();
+                            input.value = displayVal;
                             if (cfg.sl) {
                                 const slider = document.getElementById(cfg.sl);
                                 if (slider && document.activeElement !== slider) {
-                                    slider.value = numericValue;
+                                    slider.value = displayVal;
                                 }
                             }
                         }
