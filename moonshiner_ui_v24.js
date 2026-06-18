@@ -546,9 +546,12 @@
                 color: var(--ink-muted);
                 white-space: nowrap;
                 letter-spacing: -0.08px;
-                pointer-events: none;
                 line-height: 1;
+                cursor: pointer;
+                transition: color 0.15s;
             }
+            .ss-label:hover { color: var(--primary); }
+            .ss-label-up { top: calc(50% - 14px); }
 
             .switch-row {
                 display: flex;
@@ -784,9 +787,9 @@
                             <div class="slider-wrap">
                                 <input type="range" id="in-vh-slider" min="0" max="1023" step="1" value="0">
                                 <div class="ss-marker" style="left:2%"></div>
-                                <div class="ss-label" style="left:2%">Heads</div>
+                                <div class="ss-label ss-label-up" style="left:2%" data-target="in-vh" data-value="20">Heads</div>
                                 <div class="ss-marker" style="left:21.5%"></div>
-                                <div class="ss-label" style="left:21.5%">Hearts</div>
+                                <div class="ss-label" style="left:21.5%" data-target="in-vh" data-value="220">Hearts</div>
                             </div>
                         </div>
                     </div>
@@ -797,7 +800,7 @@
                             <div class="slider-wrap">
                                 <input type="range" id="in-vl-slider" min="0" max="1023" step="1" value="0">
                                 <div class="ss-marker" style="left:21.5%"></div>
-                                <div class="ss-label" style="left:21.5%">Hearts</div>
+                                <div class="ss-label" style="left:21.5%" data-target="in-vl" data-value="220">Hearts</div>
                             </div>
                         </div>
                     </div>
@@ -808,7 +811,9 @@
                             <div class="slider-wrap">
                                 <input type="range" id="in-heat-slider" min="0" max="2750" step="10" value="0">
                                 <div class="ss-marker" style="left:63.6%"></div>
-                                <div class="ss-label" style="left:63.6%">Working Power</div>
+                                <div class="ss-label" style="left:63.6%" data-target="in-heat" data-value="1750">Working Power</div>
+                                <div class="ss-marker" style="left:100%"></div>
+                                <div class="ss-label ss-label-up" style="left:100%;transform:translateX(-100%)" data-target="in-heat" data-value="2750">Heating</div>
                             </div>
                         </div>
                     </div>
@@ -1252,6 +1257,26 @@
         source.onerror = function () {
             setConnected(false);
         };
+
+        // Click handler for slider markers
+        document.addEventListener('click', function (e) {
+            var label = e.target.closest('.ss-label');
+            if (!label) return;
+            var targetId = label.getAttribute('data-target');
+            var value = label.getAttribute('data-value');
+            if (!targetId || !value) return;
+            var input = document.getElementById(targetId);
+            if (!input) return;
+            input.value = value;
+            input.classList.add('sending');
+            var wrap = label.closest('.slider-wrap');
+            if (wrap) {
+                var slider = wrap.querySelector('input[type="range"]');
+                if (slider) slider.value = value;
+            }
+            input.dispatchEvent(new Event('change'));
+            setTimeout(function () { input.classList.remove('sending'); }, 1000);
+        });
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initUI);
