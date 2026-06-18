@@ -102,14 +102,18 @@
                 letter-spacing: var(--body-tracking);
                 -webkit-font-smoothing: antialiased;
                 transition: background 0.3s, color 0.3s;
+                overflow-x: hidden;
             }
+            * { box-sizing: border-box; }
 
             #custom-app {
                 max-width: 800px;
+                width: 100%;
                 margin: 0 auto;
                 padding: 20px 16px 40px;
                 display: grid;
                 gap: 16px;
+                box-sizing: border-box;
             }
 
             .card {
@@ -777,7 +781,11 @@
                         <div class="input-row">
                             <button class="btn btn-stepper" data-stepper="in-target" data-step="-0.1">&minus;</button>
                             <input type="number" id="in-target" step="0.01" min="0" max="100" value="95.00">
-                            <input type="range" id="in-target-slider" min="0" max="100" step="0.01" value="95.00">
+                            <div class="slider-wrap">
+                                <input type="range" id="in-target-slider" min="0" max="100" step="0.01" value="95.00">
+                                <div class="ss-marker" style="left:78.39%"></div>
+                                <div class="ss-label" style="left:78.39%" data-target="in-target" data-value="78.39">Spirit</div>
+                            </div>
                             <button class="btn btn-stepper" data-stepper="in-target" data-step="0.1">&plus;</button>
                             <div class="delta-inline">
                                 <span class="delta-label">Δ</span>
