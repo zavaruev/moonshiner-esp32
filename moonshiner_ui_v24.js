@@ -433,12 +433,15 @@
                 display: flex;
                 align-items: center;
                 gap: 10px;
+                min-width: 0;
             }
+            .input-row > * { min-width: 0; }
 
             .number-wrap {
                 position: relative;
                 display: inline-flex;
                 align-items: center;
+                flex-shrink: 0;
             }
             .number-unit {
                 position: absolute;
@@ -454,6 +457,7 @@
                 font-size: 15px;
                 font-weight: 400;
                 width: 80px;
+                max-width: 80px;
                 padding: 8px 6px;
                 border-radius: var(--radius-sm);
                 border: 1px solid var(--input-border);
@@ -503,7 +507,8 @@
                 color: var(--ink-muted);
             }
             .delta-inline input[type="number"] {
-                width: 44px;
+                width: 50px;
+                max-width: 50px;
                 padding: 6px 4px;
                 font-size: 13px;
             }
@@ -674,6 +679,7 @@
 
                 .card { padding: 16px; border-radius: 14px; }
 
+                .top-bar { flex-wrap: wrap; }
                 .top-bar-left h1 { font-size: 24px; }
 
                 .sensor-grid { grid-template-columns: 1fr; }
@@ -698,7 +704,8 @@
                 .sensor-item { padding: 10px 12px; }
                 .sensor-item .value { font-size: 20px; }
 
-                input[type="number"] { width: 70px; font-size: 14px; padding: 6px 8px; }
+                input[type="number"] { width: 60px; font-size: 13px; padding: 6px 6px; }
+                .btn-stepper { width: 30px; height: 30px; font-size: 15px; }
             }
         `;
         document.head.appendChild(style);
