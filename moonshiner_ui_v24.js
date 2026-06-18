@@ -643,12 +643,6 @@
                         <h1>Moonshiner <span id="hb" style="color:var(--success);opacity:0.2;">●</span></h1>
                         <div class="meta">
                             <span id="conn-status"><span class="conn-dot disconnected"></span> Connecting...</span>
-                            <span>Up <span id="val-uptime" class="skel">--</span></span>
-                            <span>WiFi <span id="val-wifi" class="skel">--</span> dBm</span>
-                            <span>Heap <span id="val-heap" class="skel">--</span></span>
-                        </div>
-                        <div class="meta" style="margin-top:1px;color:var(--ink-subtle);">
-                            Reset: <span id="val-reset" class="skel">--</span>
                         </div>
                     </div>
                     <div class="top-bar-right">
@@ -796,18 +790,34 @@
                     <span id="diag-arrow" style="color:var(--ink-muted);font-size:14px;">&#9660;</span>
                 </div>
                 <div id="diag-body">
-                    <div class="sensor-grid" style="grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+                    <div class="sensor-grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+                        <div class="sensor-item" style="padding:8px;">
+                            <div class="label">Connection</div>
+                            <div class="value" style="font-size:16px;" id="val-diag-conn">--</div>
+                        </div>
+                        <div class="sensor-item" style="padding:8px;">
+                            <div class="label">Uptime</div>
+                            <div class="value" style="font-size:16px;" id="val-diag-uptime">--</div>
+                        </div>
+                        <div class="sensor-item" style="padding:8px;">
+                            <div class="label">WiFi Signal</div>
+                            <div class="value" style="font-size:16px;" id="val-diag-wifi">--</div>
+                        </div>
+                        <div class="sensor-item" style="padding:8px;">
+                            <div class="label">Free Heap</div>
+                            <div class="value" style="font-size:16px;" id="val-diag-heap">--</div>
+                        </div>
                         <div class="sensor-item" style="padding:8px;">
                             <div class="label">Loop Time</div>
-                            <div class="value" style="font-size:20px;" id="val-loop-time" class="skel">--</div>
+                            <div class="value" style="font-size:16px;" id="val-loop-time" class="skel">--</div>
                         </div>
                         <div class="sensor-item" style="padding:8px;">
                             <div class="label">Display</div>
-                            <div class="value" style="font-size:20px;" id="val-diag" class="skel">--</div>
+                            <div class="value" style="font-size:16px;" id="val-diag" class="skel">--</div>
                         </div>
-                        <div class="sensor-item" style="padding:8px;">
+                        <div class="sensor-item" style="padding:8px;grid-column:1/-1;">
                             <div class="label">Reset Reason</div>
-                            <div class="value" style="font-size:16px;" id="val-reset-log">--</div>
+                            <div class="value" style="font-size:14px;" id="val-reset-log">--</div>
                         </div>
                     </div>
                     <div id="log-area" style="background:var(--input-bg);border-radius:var(--radius-sm);padding:8px;font-family:'Menlo','Monaco','Consolas',monospace;font-size:11px;line-height:1.6;color:var(--ink);max-height:200px;overflow-y:auto;border:1px solid var(--card-border);white-space:pre-wrap;"></div>
@@ -1068,12 +1078,16 @@
         function setConnected(state) {
             const el = document.getElementById('conn-status');
             const hb = document.getElementById('hb');
+            var statusText;
             if (state) {
-                el.innerHTML = '<span class="conn-dot"></span> Connected';
+                statusText = '<span class="conn-dot"></span> Connected';
                 if (hb) { hb.style.opacity = 1; setTimeout(function () { hb.style.opacity = 0.2; }, 200); }
             } else {
-                el.innerHTML = '<span class="conn-dot disconnected"></span> Disconnected';
+                statusText = '<span class="conn-dot disconnected"></span> Disconnected';
             }
+            el.innerHTML = statusText;
+            var dc = document.getElementById('val-diag-conn');
+            if (dc) dc.innerHTML = statusText;
         }
 
         source.addEventListener('state', e => {
@@ -1114,6 +1128,20 @@
                     if (data.id === 'text_sensor-reset_reason') {
                         var resetLog = document.getElementById('val-reset-log');
                         if (resetLog) resetLog.textContent = String(data.state);
+                    }
+
+                    // Mirror key values to diagnostics card
+                    if (data.id === 'sensor-uptime') {
+                        var du = document.getElementById('val-diag-uptime');
+                        if (du) du.textContent = newText;
+                    }
+                    if (data.id === 'sensor-wifi_signal') {
+                        var dw = document.getElementById('val-diag-wifi');
+                        if (dw) dw.textContent = newText;
+                    }
+                    if (data.id === 'sensor-free_heap') {
+                        var dh = document.getElementById('val-diag-heap');
+                        if (dh) dh.textContent = newText;
                     }
 
                     el.classList.remove('skel');
