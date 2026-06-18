@@ -196,7 +196,7 @@
                 background: var(--divider);
                 color: var(--ink-muted);
                 text-transform: uppercase;
-                transition: all 0.2s ease;
+                transition: all 0.15s ease;
                 flex-shrink: 0;
             }
 
@@ -702,23 +702,21 @@
             <div class="card">
                 <div class="top-bar">
                     <div class="top-bar-left">
-                        <span class="badge badge-status" id="val-msg">Connecting...</span>
+                        <div class="vol-mini">
+                            <span class="vol-icon" id="vol-icon">&#9835;</span>
+                            <input type="range" id="in-vol-slider" min="0" max="100" step="1" value="100">
+                            <span class="vol-val" id="vol-val">100</span>
+                            <input type="number" id="in-vol" value="100" style="display:none;">
+                        </div>
+                        <button class="theme-toggle" id="btn-theme" aria-label="Toggle theme">
+                            <span class="icon">&#9790;</span>
+                        </button>
                         <button class="btn btn-danger" id="btn-restart" style="display:none;padding:4px 12px;font-size:11px;">Restart</button>
                     </div>
                     <div class="top-bar-right">
-                        <div class="top-bar-utils">
-                            <div class="vol-mini">
-                                <span class="vol-icon" id="vol-icon">&#9835;</span>
-                                <input type="range" id="in-vol-slider" min="0" max="100" step="1" value="100">
-                                <span class="vol-val" id="vol-val">100</span>
-                                <input type="number" id="in-vol" value="100" style="display:none;">
-                            </div>
-                            <button class="theme-toggle" id="btn-theme" aria-label="Toggle theme">
-                                <span class="icon">&#9790;</span>
-                            </button>
-                        </div>
                         <div class="badge-row">
                             <span id="conn-status" class="badge badge-conn disconnected">Connecting...</span>
+                            <span class="badge badge-status" id="val-msg">Connecting...</span>
                             <span id="st-distilling" class="badge">Distilling</span>
                             <span id="st-heating" class="badge">Heating</span>
                             <span id="st-alarm" class="badge">Alarm</span>
@@ -1165,22 +1163,29 @@
         }
 
         function setConnected(state) {
-            const el = document.getElementById('conn-status');
-            if (!el) return;
+            var connEl = document.getElementById('conn-status');
+            var runEl = document.getElementById('val-msg');
+            if (!connEl) return;
             if (state) {
-                el.textContent = 'Connected';
-                el.classList.remove('disconnected');
-                el.style.opacity = '1';
+                connEl.textContent = 'Connected';
+                connEl.classList.remove('disconnected');
+                // Modem blink: Connected bright, RUNNING dim
+                connEl.style.opacity = '1';
+                if (runEl) runEl.style.opacity = '0.4';
                 setTimeout(function () {
-                    el.style.opacity = '0.3';
+                    // Alternate: Connected dim, RUNNING bright
+                    connEl.style.opacity = '0.4';
+                    if (runEl) runEl.style.opacity = '1';
                     setTimeout(function () {
-                        el.style.opacity = '1';
+                        connEl.style.opacity = '';
+                        if (runEl) runEl.style.opacity = '';
                     }, 150);
-                }, 50);
+                }, 150);
             } else {
-                el.textContent = 'Disconnected';
-                el.classList.add('disconnected');
-                el.style.opacity = '1';
+                connEl.textContent = 'Disconnected';
+                connEl.classList.add('disconnected');
+                connEl.style.opacity = '1';
+                if (runEl) runEl.style.opacity = '';
             }
             var dc = document.getElementById('val-diag-conn');
             if (dc) dc.innerHTML = state ? 'Connected' : 'Disconnected';
