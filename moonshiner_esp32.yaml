@@ -430,8 +430,8 @@ sensor:
     unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
-    accuracy_decimals: 0
-    resolution: 9 # 9-bit = 94ms conversion (vs 750ms for 12-bit), stable on long wires
+    accuracy_decimals: 4
+    resolution: 9 # 9-bit = 94ms conversion, stable on long wires
     update_interval: 5s
     filters:
       - median:
@@ -454,7 +454,7 @@ sensor:
     unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
-    accuracy_decimals: 0
+    accuracy_decimals: 1
     resolution: 9 # 9-bit = 94ms conversion, stable on long wires
     update_interval: 5s
     filters:
