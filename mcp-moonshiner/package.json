@@ -1,0 +1,24 @@
+{
+  "name": "@moonshiner/mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Moonshiner ESP32 distillation controller — read temperatures, control heater/valves, manage distillation process",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "moonshiner-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": ["moonshiner", "esp32", "mcp", "distillation", "esphome"],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "typescript": "^6.0.3"
+  }
+}
