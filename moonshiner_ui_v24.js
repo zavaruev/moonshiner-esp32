@@ -514,6 +514,42 @@
                 box-shadow: 0 1px 4px rgba(0,0,0,0.2);
             }
 
+            .slider-wrap {
+                position: relative;
+                flex: 1;
+                display: flex;
+                align-items: center;
+                align-self: stretch;
+            }
+            .slider-wrap input[type="range"] {
+                width: 100%;
+            }
+            .ss-marker {
+                position: absolute;
+                top: 50%;
+                width: 1px;
+                height: 14px;
+                background: var(--primary);
+                transform: translate(-50%, -50%);
+                pointer-events: none;
+                opacity: 0.35;
+                border-radius: 0.5px;
+            }
+            .ss-label {
+                position: absolute;
+                top: calc(50% + 14px);
+                left: 50%;
+                transform: translateX(-50%);
+                font-family: var(--font-text);
+                font-size: 10px;
+                font-weight: 400;
+                color: var(--ink-muted);
+                white-space: nowrap;
+                letter-spacing: -0.08px;
+                pointer-events: none;
+                line-height: 1;
+            }
+
             .switch-row {
                 display: flex;
                 align-items: center;
@@ -745,21 +781,35 @@
                         <label>Valve High</label>
                         <div class="input-row">
                             <input type="number" id="in-vh" step="1" min="0" max="1023" value="0">
-                            <input type="range" id="in-vh-slider" min="0" max="1023" step="1" value="0">
+                            <div class="slider-wrap">
+                                <input type="range" id="in-vh-slider" min="0" max="1023" step="1" value="0">
+                                <div class="ss-marker" style="left:2%"></div>
+                                <div class="ss-label" style="left:2%">Heads</div>
+                                <div class="ss-marker" style="left:21.5%"></div>
+                                <div class="ss-label" style="left:21.5%">Hearts</div>
+                            </div>
                         </div>
                     </div>
                     <div class="control-item">
                         <label>Valve Low</label>
                         <div class="input-row">
                             <input type="number" id="in-vl" step="1" min="0" max="1023" value="0">
-                            <input type="range" id="in-vl-slider" min="0" max="1023" step="1" value="0">
+                            <div class="slider-wrap">
+                                <input type="range" id="in-vl-slider" min="0" max="1023" step="1" value="0">
+                                <div class="ss-marker" style="left:21.5%"></div>
+                                <div class="ss-label" style="left:21.5%">Hearts</div>
+                            </div>
                         </div>
                     </div>
                     <div class="control-item full">
                         <label>Heater Power</label>
                         <div class="input-row">
                             <input type="number" id="in-heat" step="10" min="0" max="2750" value="0">
-                            <input type="range" id="in-heat-slider" min="0" max="2750" step="10" value="0">
+                            <div class="slider-wrap">
+                                <input type="range" id="in-heat-slider" min="0" max="2750" step="10" value="0">
+                                <div class="ss-marker" style="left:63.6%"></div>
+                                <div class="ss-label" style="left:63.6%">Working Power</div>
+                            </div>
                         </div>
                     </div>
                 </div>
