@@ -697,8 +697,8 @@
                         <label>Target Temperature</label>
                         <div class="input-row">
                             <button class="btn btn-stepper" data-stepper="in-target" data-step="-0.1">&minus;</button>
-                            <input type="number" id="in-target" step="0.1" min="0" max="100" value="95.0">
-                            <input type="range" id="in-target-slider" min="0" max="100" step="0.1" value="95.0">
+                            <input type="number" id="in-target" step="0.01" min="0" max="100" value="95.00">
+                            <input type="range" id="in-target-slider" min="0" max="100" step="0.01" value="95.00">
                             <button class="btn btn-stepper" data-stepper="in-target" data-step="0.1">&plus;</button>
                         </div>
                     </div>
@@ -1164,7 +1164,9 @@
                         }
                         const numVal = parseFloat(numericValue);
                         if (!isNaN(numVal)) {
-                            const displayVal = numVal.toString();
+                            const stepVal = parseFloat(input.getAttribute('step') || '1');
+                            const d = stepVal > 0 && stepVal < 1 ? stepVal.toString().split('.')[1].length : 0;
+                            const displayVal = numVal.toFixed(d);
                             input.value = displayVal;
                             if (cfg.sl) {
                                 const slider = document.getElementById(cfg.sl);
