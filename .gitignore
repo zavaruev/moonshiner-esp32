@@ -3,3 +3,7 @@
 # You can modify this file to suit your needs.
 /.esphome/
 /secrets.yaml
+
+# MCP server
+mcp-moonshiner/node_modules/
+mcp-moonshiner/dist/
