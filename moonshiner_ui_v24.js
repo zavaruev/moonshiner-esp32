@@ -116,7 +116,7 @@
                 background: var(--card-bg);
                 border: 1px solid var(--card-border);
                 border-radius: var(--radius-lg);
-                padding: 24px;
+                padding: 20px;
                 box-shadow: var(--shadow-sm);
                 transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
             }
@@ -245,14 +245,14 @@
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                gap: 12px;
+                gap: 8px;
                 flex-wrap: wrap;
             }
 
             .status-msg {
                 font-family: var(--font-display);
-                font-size: 18px;
-                font-weight: 400;
+                font-size: 13px;
+                font-weight: 500;
                 letter-spacing: 0;
                 color: var(--ink);
             }
@@ -742,7 +742,7 @@
                     </div>
                 </div>
 
-                <div class="status-bar" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--divider-soft);">
+                <div class="status-bar" style="margin-top:8px;">
                     <span class="status-msg" id="val-msg">Connecting...</span>
                     <button class="btn btn-danger" id="btn-restart" style="display:none;">Restart</button>
                 </div>
@@ -787,7 +787,7 @@
                             <button class="btn btn-stepper" data-stepper="in-target" data-step="0.1">&plus;</button>
                             <div class="delta-inline">
                                 <span class="delta-label">Δ</span>
-                                <input type="number" id="in-delta" step="0.1" min="0" max="5" value="0.3">
+                                <input type="number" id="in-delta" step="0.01" min="0" max="5" value="0.30">
                             </div>
                         </div>
                     </div>
