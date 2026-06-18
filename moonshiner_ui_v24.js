@@ -158,19 +158,9 @@
             /* === Top Bar === */
             .top-bar {
                 display: flex;
-                justify-content: space-between;
+                justify-content: flex-end;
                 align-items: center;
                 gap: 12px;
-            }
-
-            .top-bar-left {
-                display: flex;
-                align-items: center;
-            }
-            .top-bar-left #conn-status {
-                font-size: 13px;
-                color: var(--ink-muted);
-                font-weight: 500;
             }
 
             .top-bar-right {
@@ -186,17 +176,6 @@
                 gap: 6px;
             }
 
-            .conn-dot {
-                display: inline-block;
-                width: 8px;
-                height: 8px;
-                border-radius: 50%;
-                background: var(--success);
-                transition: all 0.2s ease;
-            }
-
-            .conn-dot.disconnected { background: var(--danger); }
-
             .badge-row {
                 display: flex;
                 gap: 6px;
@@ -209,11 +188,21 @@
                 letter-spacing: 0.3px;
                 padding: 4px 10px;
                 border-radius: var(--radius-pill);
-                background: var(--badge-bg);
+                background: var(--divider);
                 color: var(--ink-muted);
                 text-transform: uppercase;
-                border: 1px solid var(--card-border);
-                transition: all 0.3s;
+                transition: all 0.2s ease;
+                flex-shrink: 0;
+            }
+
+            .badge-conn {
+                background: var(--success);
+                color: #fff;
+            }
+
+            .badge-conn.disconnected {
+                background: var(--danger);
+                color: #fff;
             }
 
             .badge.on {
@@ -717,9 +706,6 @@
         app.innerHTML = `
             <div class="card">
                 <div class="top-bar">
-                    <div class="top-bar-left">
-                        <span id="conn-status"><span class="conn-dot disconnected"></span> Connecting...</span>
-                    </div>
                     <div class="top-bar-right">
                         <div class="top-bar-utils">
                             <div class="vol-mini">
@@ -733,6 +719,7 @@
                             </button>
                         </div>
                         <div class="badge-row">
+                            <span id="conn-status" class="badge badge-conn disconnected">Connecting...</span>
                             <span id="st-distilling" class="badge">Distilling</span>
                             <span id="st-heating" class="badge">Heating</span>
                             <span id="st-alarm" class="badge">Alarm</span>
@@ -1185,26 +1172,20 @@
 
         function setConnected(state) {
             const el = document.getElementById('conn-status');
-            const connDot = el ? el.querySelector('.conn-dot') : null;
-            var statusText;
+            if (!el) return;
             if (state) {
-                statusText = '<span class="conn-dot"></span> Connected';
-                el.innerHTML = statusText;
-                const dot = el.querySelector('.conn-dot');
-                if (dot) {
-                    dot.style.opacity = '1';
-                    dot.style.transform = 'scale(1.3)';
-                    setTimeout(function () {
-                        dot.style.opacity = '';
-                        dot.style.transform = '';
-                    }, 200);
-                }
+                el.textContent = 'Connected';
+                el.classList.remove('disconnected');
+                el.style.transform = 'scale(1.08)';
+                setTimeout(function () {
+                    el.style.transform = '';
+                }, 200);
             } else {
-                statusText = '<span class="conn-dot disconnected"></span> Disconnected';
-                el.innerHTML = statusText;
+                el.textContent = 'Disconnected';
+                el.classList.add('disconnected');
             }
             var dc = document.getElementById('val-diag-conn');
-            if (dc) dc.innerHTML = statusText;
+            if (dc) dc.innerHTML = state ? 'Connected' : 'Disconnected';
         }
 
         source.addEventListener('state', e => {
