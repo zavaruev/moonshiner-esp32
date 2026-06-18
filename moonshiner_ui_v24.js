@@ -1182,13 +1182,17 @@
             if (state) {
                 el.textContent = 'Connected';
                 el.classList.remove('disconnected');
-                el.style.transform = 'scale(1.08)';
+                el.style.opacity = '1';
                 setTimeout(function () {
-                    el.style.transform = '';
-                }, 200);
+                    el.style.opacity = '0.8';
+                    setTimeout(function () {
+                        el.style.opacity = '1';
+                    }, 100);
+                }, 100);
             } else {
                 el.textContent = 'Disconnected';
                 el.classList.add('disconnected');
+                el.style.opacity = '1';
             }
             var dc = document.getElementById('val-diag-conn');
             if (dc) dc.innerHTML = state ? 'Connected' : 'Disconnected';
