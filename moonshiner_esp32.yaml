@@ -46,6 +46,7 @@ esp32:
     version: 5.5.0
     sdkconfig_options:
       CONFIG_LWIP_MAX_SOCKETS: "16" # Increase max sockets from 10 to 16 for multiple simultaneous connections
+      CONFIG_ESP_TASK_WDT_TIMEOUT_S: "10" # Bump TWDT from 5s to 10s (I2C display can stall)
 
 # Enable logging (Level INFO is good for production)
 logger:
@@ -92,6 +93,7 @@ i2c:
   scl: GPIO22
 
 # OneWire Bus for DS18B20 Temperature Sensors
+# NOTE: 2m wires — needs 4.7kΩ pull-up to 3.3V for reliable reads
 one_wire:
   - platform: gpio
     pin: GPIO4
@@ -733,6 +735,7 @@ display:
     id: oled_display
     model: "SH1106 128x64"
     address: 0x3C
+    update_interval: 1s
     lambda: |-
       // Clear display buffer first to prevent artifacts
       it.fill(COLOR_OFF);
