@@ -430,7 +430,7 @@ sensor:
     unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
-    accuracy_decimals: 4
+    accuracy_decimals: 2
     resolution: 9 # 9-bit = 94ms conversion, stable on long wires
     update_interval: 5s
     filters:
