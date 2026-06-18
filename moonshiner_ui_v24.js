@@ -785,7 +785,32 @@
                     <span class="vol-icon" id="vol-icon">&#9835;</span>
                     <input type="range" id="in-vol-slider" min="0" max="100" step="1" value="100">
                     <span class="vol-val" id="vol-val">100</span>
-                    <input type="number" id="in-vol" value="100" style="display:none;">
+                        <input type="number" id="in-vol" value="100" style="display:none;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" id="diag-card" style="position:relative;">
+                <div class="card-header" style="margin-bottom:8px;cursor:pointer;" id="diag-toggle">
+                    <h2 class="card-title" style="font-size:16px;">&#9881; Diagnostics</h2>
+                    <span id="diag-arrow" style="color:var(--ink-muted);font-size:14px;">&#9660;</span>
+                </div>
+                <div id="diag-body">
+                    <div class="sensor-grid" style="grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+                        <div class="sensor-item" style="padding:8px;">
+                            <div class="label">Loop Time</div>
+                            <div class="value" style="font-size:20px;" id="val-loop-time" class="skel">--</div>
+                        </div>
+                        <div class="sensor-item" style="padding:8px;">
+                            <div class="label">Display</div>
+                            <div class="value" style="font-size:20px;" id="val-diag" class="skel">--</div>
+                        </div>
+                        <div class="sensor-item" style="padding:8px;">
+                            <div class="label">Reset Reason</div>
+                            <div class="value" style="font-size:16px;" id="val-reset-log">--</div>
+                        </div>
+                    </div>
+                    <div id="log-area" style="background:var(--input-bg);border-radius:var(--radius-sm);padding:8px;font-family:'Menlo','Monaco','Consolas',monospace;font-size:11px;line-height:1.6;color:var(--ink);max-height:200px;overflow-y:auto;border:1px solid var(--card-border);white-space:pre-wrap;"></div>
                 </div>
             </div>
         `;
@@ -833,9 +858,11 @@
             'sensor-uptime': { el: 'val-uptime', fmt: v => { const s = parseInt(v); return isNaN(s) ? '--' : Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm'; } },
             'sensor-wifi_signal': { el: 'val-wifi', fmt: v => { const n = parseNum(v); return n !== null ? Math.round(n) : '--'; } },
             'sensor-free_heap': { el: 'val-heap', fmt: v => { const n = parseNum(v); return n !== null ? Math.round(n / 1024) + 'KB' : '--'; } },
+            'sensor-loop_time': { el: 'val-loop-time', fmt: v => { const n = parseNum(v); return n !== null ? n.toFixed(0) + 'ms' : '--'; } },
 
             'text_sensor-status_message': { el: 'val-msg' },
             'text_sensor-reset_reason': { el: 'val-reset' },
+            'text_sensor-diagnostic_message': { el: 'val-diag', noStore: true },
 
             'number-target_column_temp': { in: 'in-target', sl: 'in-target-slider', api: 'number/target_column_temp' },
             'number-delta': { in: 'in-delta', api: 'number/delta' },
@@ -860,7 +887,7 @@
                 let saved; try { saved = sessionStorage.getItem('ms_' + id); } catch (e) { saved = null; }
                 if (saved === null) return;
                 const cfg = entities[id];
-                if (cfg.el) {
+                if (cfg.el && !cfg.noStore) {
                     const el = document.getElementById(cfg.el);
                     if (el) {
                         const val = cfg.fmt ? cfg.fmt(saved) : saved;
@@ -887,6 +914,27 @@
             });
         }
         restoreSession();
+
+        // Log ring buffer for diagnostics
+        var logBuffer = [];
+        var MAX_LOG = 20;
+        function addLog(msg) {
+            var ts = new Date().toLocaleTimeString();
+            logBuffer.push(ts + ' ' + msg);
+            if (logBuffer.length > MAX_LOG) logBuffer.shift();
+            var el = document.getElementById('log-area');
+            if (el) {
+                el.innerHTML = logBuffer.map(function (l) { return '<div>' + l.replace(/</g, '&lt;') + '</div>'; }).join('');
+                el.scrollTop = el.scrollHeight;
+            }
+        }
+        function renderLog() {
+            var el = document.getElementById('log-area');
+            if (el) {
+                el.innerHTML = logBuffer.map(function (l) { return '<div>' + l.replace(/</g, '&lt;') + '</div>'; }).join('');
+                el.scrollTop = el.scrollHeight;
+            }
+        }
 
         function debounce(func, wait) {
             let timeout;
@@ -991,6 +1039,17 @@
         const source = new EventSource('/events');
         let connTimer;
 
+        addLog('Diagnostics initialized. Monitoring...');
+
+        // Collapsible diagnostics card
+        var diagBody = document.getElementById('diag-body');
+        var diagArrow = document.getElementById('diag-arrow');
+        document.getElementById('diag-toggle').addEventListener('click', function () {
+            var hidden = diagBody.style.display === 'none';
+            diagBody.style.display = hidden ? '' : 'none';
+            diagArrow.textContent = hidden ? '\u25BC' : '\u25B6';
+        });
+
         function updateTempVisuals(sensorId, tempC) {
             const card = document.getElementById(sensorId === 'sensor-column_temperature' ? 'col-temp-card' : 'tank-temp-card');
             const arc = document.getElementById(sensorId === 'sensor-column_temperature' ? 'col-temp-arc' : 'tank-temp-arc');
@@ -1046,6 +1105,15 @@
                             btn.style.display = (data.state === 'DONE') ? 'inline-flex' : 'none';
                         }
                         el.classList.toggle('done', data.state === 'DONE');
+                    }
+
+                    if (data.id === 'text_sensor-diagnostic_message') {
+                        addLog(String(data.state));
+                    }
+
+                    if (data.id === 'text_sensor-reset_reason') {
+                        var resetLog = document.getElementById('val-reset-log');
+                        if (resetLog) resetLog.textContent = String(data.state);
                     }
 
                     el.classList.remove('skel');
