@@ -431,7 +431,7 @@ sensor:
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 2
-    resolution: 9 # 9-bit = 94ms conversion, stable on long wires
+    resolution: 12 # 12-bit = 750ms conversion, 0.0625°C precision
     update_interval: 5s
     filters:
       - median:
@@ -455,7 +455,7 @@ sensor:
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 1
-    resolution: 9 # 9-bit = 94ms conversion, stable on long wires
+    resolution: 12 # 12-bit = 750ms conversion, 0.0625°C precision
     update_interval: 5s
     filters:
       - median:
