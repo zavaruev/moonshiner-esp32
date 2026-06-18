@@ -763,12 +763,6 @@
                             <input type="number" id="in-delta" step="0.1" min="0" max="5" value="0.3">
                         </div>
                     </div>
-                    <div class="control-item">
-                        <label>Max Tank Temp</label>
-                        <div class="input-row">
-                            <input type="number" id="in-max-tank" step="0.1" min="0" max="100" value="99.0">
-                        </div>
-                    </div>
                 </div>
 
                 <div class="control-item full" style="margin-top:12px;">
@@ -799,24 +793,30 @@
                     <div class="control-item">
                         <label>Valve High</label>
                         <div class="input-row">
-                            <input type="number" id="in-vh" step="1" min="0" max="1023" value="0">
+                            <div class="number-wrap">
+                                <input type="number" id="in-vh" class="has-unit" step="1" min="0" max="100" value="0">
+                                <span class="number-unit">%</span>
+                            </div>
                             <div class="slider-wrap">
-                                <input type="range" id="in-vh-slider" min="0" max="1023" step="1" value="0">
+                                <input type="range" id="in-vh-slider" min="0" max="100" step="1" value="0">
                                 <div class="ss-marker" style="left:2%"></div>
-                                <div class="ss-label" style="left:2%" data-target="in-vh" data-value="20">Heads</div>
+                                <div class="ss-label" style="left:2%" data-target="in-vh" data-value="2">Heads</div>
                                 <div class="ss-marker" style="left:21.5%"></div>
-                                <div class="ss-label" style="left:21.5%" data-target="in-vh" data-value="220">Hearts</div>
+                                <div class="ss-label" style="left:21.5%" data-target="in-vh" data-value="22">Hearts</div>
                             </div>
                         </div>
                     </div>
                     <div class="control-item">
                         <label>Valve Low</label>
                         <div class="input-row">
-                            <input type="number" id="in-vl" step="1" min="0" max="1023" value="0">
+                            <div class="number-wrap">
+                                <input type="number" id="in-vl" class="has-unit" step="1" min="0" max="100" value="0">
+                                <span class="number-unit">%</span>
+                            </div>
                             <div class="slider-wrap">
-                                <input type="range" id="in-vl-slider" min="0" max="1023" step="1" value="0">
+                                <input type="range" id="in-vl-slider" min="0" max="100" step="1" value="0">
                                 <div class="ss-marker" style="left:21.5%"></div>
-                                <div class="ss-label" style="left:21.5%" data-target="in-vl" data-value="220">Hearts</div>
+                                <div class="ss-label" style="left:21.5%" data-target="in-vl" data-value="22">Hearts</div>
                             </div>
                         </div>
                     </div>
@@ -834,6 +834,16 @@
                                 <div class="ss-marker" style="left:100%"></div>
                                 <div class="ss-label" style="left:100%;transform:translateX(-100%)" data-target="in-heat" data-value="2750">Heating</div>
                             </div>
+                        </div>
+                    </div>
+                    <div class="control-item full">
+                        <label>Max Tank Temp</label>
+                        <div class="input-row">
+                            <div class="number-wrap">
+                                <input type="number" id="in-max-tank" class="has-unit" step="0.1" min="0" max="100" value="99.0">
+                                <span class="number-unit">°C</span>
+                            </div>
+                            <input type="range" id="in-max-tank-slider" min="0" max="100" step="0.1" value="99.0">
                         </div>
                     </div>
                 </div>
@@ -951,9 +961,9 @@
             'number-target_column_temp': { in: 'in-target', sl: 'in-target-slider', api: 'number/target_column_temp' },
             'number-delta': { in: 'in-delta', api: 'number/delta' },
             'number-coef_otbora': { in: 'in-coef', sl: 'in-coef-slider', api: 'number/coef_otbora' },
-            'number-max_tank_temp': { in: 'in-max-tank', api: 'number/max_tank_temp' },
-            'number-valve_high_setting': { in: 'in-vh', sl: 'in-vh-slider', api: 'number/valve_high_setting' },
-            'number-valve_low_setting': { in: 'in-vl', sl: 'in-vl-slider', api: 'number/valve_low_setting' },
+            'number-max_tank_temp': { in: 'in-max-tank', sl: 'in-max-tank-slider', api: 'number/max_tank_temp' },
+            'number-valve_high_setting': { in: 'in-vh', sl: 'in-vh-slider', api: 'number/valve_high_setting', pct: true },
+            'number-valve_low_setting': { in: 'in-vl', sl: 'in-vl-slider', api: 'number/valve_low_setting', pct: true },
             'number-heater_power': { in: 'in-heat', sl: 'in-heat-slider', api: 'number/heater_power' },
             'number-buzzer_volume': { in: 'in-vol', sl: 'in-vol-slider', api: 'number/buzzer_volume' },
 
@@ -981,7 +991,8 @@
                 if (cfg.in) {
                     const input = document.getElementById(cfg.in);
                     if (input) {
-                        const num = parseFloat(saved);
+                        var num = parseFloat(saved);
+                        if (cfg.pct) num = Math.round(num * 100 / 1023);
                         if (!isNaN(num) && num >= parseFloat(input.min) && num <= parseFloat(input.max)) {
                             input.value = num;
                             if (cfg.sl) {
@@ -1038,8 +1049,9 @@
 
                 if (input && apiPath) {
                     const debouncedUpdate = debounce((value) => {
+                        var apiValue = cfg.pct ? Math.round(value * 1023 / 100) : value;
                         input.classList.add('sending');
-                        fetch('/' + apiPath + '/set?value=' + value, { method: 'POST' })
+                        fetch('/' + apiPath + '/set?value=' + apiValue, { method: 'POST' })
                             .then(() => input.classList.remove('sending'))
                             .catch(err => { input.classList.remove('sending'); console.error('Failed to update ' + entityId + ':', err); });
                     }, 400);
@@ -1236,8 +1248,9 @@
                             const match = data.state.match(/-?\d+\.?\d*/);
                             if (match) numericValue = match[0];
                         }
-                        const numVal = parseFloat(numericValue);
+                        let numVal = parseFloat(numericValue);
                         if (!isNaN(numVal)) {
+                            if (cfg.pct) numVal = Math.round(numVal * 100 / 1023);
                             const stepVal = parseFloat(input.getAttribute('step') || '1');
                             const d = stepVal > 0 && stepVal < 1 ? stepVal.toString().split('.')[1].length : 0;
                             const displayVal = numVal.toFixed(d);
