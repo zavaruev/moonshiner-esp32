@@ -135,6 +135,12 @@ globals:
     restore_value: false
     initial_value: "false"
 
+  # Timestamp when overheat started (for alarm debounce)
+  - id: overheat_since
+    type: int
+    restore_value: false
+    initial_value: "0"
+
   # Track last valve levels to avoid redundant updates (SlowPWM state is protected)
   - id: last_valve_high_level
     type: float
@@ -352,6 +358,7 @@ button:
 
           // Clear overheat flag
           id(overheat_active) = false;
+          id(overheat_since) = 0;
 
           // Update status
           id(status_message).publish_state("RUNNING");
@@ -665,10 +672,11 @@ script:
              // TOO HOT -> Close Valves (but check upper valve override)
              
              // Check if this is a NEW overheat event (Transition to Overheat)
-             if (!id(overheat_active)) {
-                 id(overheat_active) = true;
-                 
-                  // Reduction Logic: reduce if Tank > 84 AND switch is enabled
+              if (!id(overheat_active)) {
+                  id(overheat_active) = true;
+                  id(overheat_since) = esphome::millis();
+
+                   // Reduction Logic: reduce if Tank > 84 AND switch is enabled
                   if (t_tank >= 84.0 && id(use_reduction_coefficient).state) {
                       float new_coef = id(coef_otbora).state * 0.9;
                       id(coef_otbora).publish_state(new_coef);
@@ -694,13 +702,13 @@ script:
              id(distilling_status).publish_state(vh_active);
            } 
            
-           // Alarm Logic: Play if overheat is active (persists until cooled down)
-           if (id(overheat_active)) {
-              if (!id(my_rtttl).is_playing()) {
-                 id(my_rtttl).play("Imperial:d=4,o=5,b=100:e,e,e,8c,16g,e,8c,16g,e,p,b,b,b,8c6,16g,d#,8c,16g,e");
-                 id(alarm_status).publish_state(true);
-              }
-           }
+            // Alarm Logic: Play if overheat persists >5s (debounce to ignore temp noise)
+            if (id(overheat_active) && esphome::millis() - id(overheat_since) > 5000) {
+               if (!id(my_rtttl).is_playing()) {
+                  id(my_rtttl).play("Imperial:d=4,o=5,b=100:e,e,e,8c,16g,e,8c,16g,e,p,b,b,b,8c6,16g,d#,8c,16g,e");
+                  id(alarm_status).publish_state(true);
+               }
+            }
 
            if (t_col <= id(target_temp).state) {
              // TEMP OK -> Open Valves
@@ -723,10 +731,11 @@ script:
              
              id(distilling_status).publish_state(vh > 0 || vl > 0);
              
-             if (id(my_rtttl).is_playing()) {
-               id(my_rtttl).stop();
-               id(alarm_status).publish_state(false);
-             }
+              if (id(my_rtttl).is_playing()) {
+                id(my_rtttl).stop();
+                id(alarm_status).publish_state(false);
+                id(overheat_since) = 0;
+              }
            }
 
 # -------------------------------------------------------------------------
