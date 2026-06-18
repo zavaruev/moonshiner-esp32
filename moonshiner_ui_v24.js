@@ -155,27 +155,19 @@
             .top-bar {
                 display: flex;
                 justify-content: space-between;
-                align-items: flex-start;
+                align-items: center;
                 gap: 12px;
             }
 
-            .top-bar-left h1 {
-                font-family: var(--font-display);
-                font-size: 28px;
-                font-weight: 600;
-                letter-spacing: -0.374px;
-                margin: 0;
-                color: var(--ink);
+            .top-bar-left {
+                display: flex;
+                align-items: center;
             }
-
-            .top-bar-left .meta {
-                font-size: 12px;
+            .top-bar-left #conn-status {
+                font-size: 13px;
                 color: var(--ink-muted);
-                margin-top: 4px;
-                letter-spacing: -0.12px;
+                font-weight: 500;
             }
-
-            .top-bar-left .meta span { margin-right: 12px; }
 
             .top-bar-right {
                 display: flex;
@@ -196,7 +188,7 @@
                 height: 8px;
                 border-radius: 50%;
                 background: var(--success);
-                transition: background 0.3s;
+                transition: all 0.2s ease;
             }
 
             .conn-dot.disconnected { background: var(--danger); }
@@ -680,7 +672,6 @@
                 .card { padding: 16px; border-radius: 14px; }
 
                 .top-bar { flex-wrap: wrap; }
-                .top-bar-left h1 { font-size: 24px; }
 
                 .sensor-grid { grid-template-columns: 1fr; }
 
@@ -696,8 +687,7 @@
 
                 .card { padding: 12px; }
 
-                .top-bar { flex-direction: column; }
-                .top-bar-left h1 { font-size: 20px; }
+                .top-bar { flex-direction: column; align-items: flex-start; }
 
                 .card-title { font-size: 18px; }
 
@@ -724,10 +714,7 @@
             <div class="card">
                 <div class="top-bar">
                     <div class="top-bar-left">
-                        <h1>Moonshiner <span id="hb" style="color:var(--success);opacity:0.2;">●</span></h1>
-                        <div class="meta">
-                            <span id="conn-status"><span class="conn-dot disconnected"></span> Connecting...</span>
-                        </div>
+                        <span id="conn-status"><span class="conn-dot disconnected"></span> Connecting...</span>
                     </div>
                     <div class="top-bar-right">
                         <div class="top-bar-utils">
@@ -1190,15 +1177,24 @@
 
         function setConnected(state) {
             const el = document.getElementById('conn-status');
-            const hb = document.getElementById('hb');
+            const connDot = el ? el.querySelector('.conn-dot') : null;
             var statusText;
             if (state) {
                 statusText = '<span class="conn-dot"></span> Connected';
-                if (hb) { hb.style.opacity = 1; setTimeout(function () { hb.style.opacity = 0.2; }, 200); }
+                el.innerHTML = statusText;
+                const dot = el.querySelector('.conn-dot');
+                if (dot) {
+                    dot.style.opacity = '1';
+                    dot.style.transform = 'scale(1.3)';
+                    setTimeout(function () {
+                        dot.style.opacity = '';
+                        dot.style.transform = '';
+                    }, 200);
+                }
             } else {
                 statusText = '<span class="conn-dot disconnected"></span> Disconnected';
+                el.innerHTML = statusText;
             }
-            el.innerHTML = statusText;
             var dc = document.getElementById('val-diag-conn');
             if (dc) dc.innerHTML = statusText;
         }
