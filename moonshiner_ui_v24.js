@@ -619,29 +619,28 @@
             .switch input:checked + .track { background: var(--primary); }
             .switch input:checked + .track::before { transform: translateX(18px); }
 
-            /* === Volume === */
-            .vol-row {
+            /* === Volume (mini header) === */
+            .vol-mini {
                 display: flex;
                 align-items: center;
-                gap: 10px;
-                padding: 8px 0;
+                gap: 6px;
             }
-
-            .vol-row .vol-icon {
-                font-size: 18px;
-                color: var(--ink-muted);
-                flex-shrink: 0;
-                width: 24px;
-                text-align: center;
-            }
-
-            .vol-row input[type="range"] { flex: 1; }
-
-            .vol-row .vol-val {
+            .vol-mini .vol-icon {
                 font-size: 14px;
-                font-weight: 600;
-                color: var(--ink);
-                min-width: 36px;
+                color: var(--ink-muted);
+                cursor: pointer;
+                transition: color 0.15s;
+            }
+            .vol-mini .vol-icon:hover { color: var(--primary); }
+            .vol-mini input[type="range"] {
+                width: 80px;
+                height: 4px;
+            }
+            .vol-mini .vol-val {
+                font-size: 12px;
+                font-weight: 500;
+                color: var(--ink-muted);
+                min-width: 24px;
                 text-align: right;
                 font-variant-numeric: tabular-nums;
             }
@@ -787,6 +786,12 @@
             <div class="card">
                 <div class="card-header">
                     <h2 class="card-title">Valves & Heater</h2>
+                    <div class="vol-mini">
+                        <span class="vol-icon" id="vol-icon">&#9835;</span>
+                        <input type="range" id="in-vol-slider" min="0" max="100" step="1" value="100">
+                        <span class="vol-val" id="vol-val">100</span>
+                        <input type="number" id="in-vol" value="100" style="display:none;">
+                    </div>
                 </div>
 
                 <div class="control-group">
@@ -858,14 +863,6 @@
                     </div>
                 </div>
 
-                <div class="vol-row" style="border-top:1px solid var(--divider-soft);margin-top:16px;padding-top:12px;">
-                    <label for="in-vol-slider" style="font-size:14px;color:var(--ink-muted);flex-shrink:0;min-width:60px;">Volume</label>
-                    <span class="vol-icon" id="vol-icon">&#9835;</span>
-                    <input type="range" id="in-vol-slider" min="0" max="100" step="1" value="100">
-                    <span class="vol-val" id="vol-val">100</span>
-                        <input type="number" id="in-vol" value="100" style="display:none;">
-                    </div>
-                </div>
             </div>
 
             <div class="card" id="diag-card" style="position:relative;">
