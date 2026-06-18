@@ -19,6 +19,9 @@ esphome:
         - lambda: |-
             id(boot_counter) += 1;
             ESP_LOGW("boot", "Boot #%d", id(boot_counter));
+            char _diag_buf[64];
+            snprintf(_diag_buf, sizeof(_diag_buf), "Boot #%d, Reason: %s", id(boot_counter), id(reset_reason).state.c_str());
+            id(diag_msg).publish_state(_diag_buf);
         - output.turn_off: heater_output
         - output.turn_off: valve_high_output
         - output.turn_off: valve_low_output
@@ -47,12 +50,13 @@ esp32:
     sdkconfig_options:
       CONFIG_LWIP_MAX_SOCKETS: "16" # Increase max sockets from 10 to 16 for multiple simultaneous connections
       CONFIG_ESP_TASK_WDT_TIMEOUT_S: "10" # Bump TWDT from 5s to 10s (I2C display can stall)
+      CONFIG_ESP_TASK_WDT_PANIC: "y" # Print backtrace on TWDT (visible via serial if connected)
 
 # Enable logging (Level INFO is good for production)
 logger:
   level: INFO
   logs:
-    esp-idf: ERROR # Suppress I2C error spam (hardware retries are normal for SH1106)
+    esp-idf: WARN # Allow TWDT panic info through (was ERROR)
 
 # Enable Home Assistant API (Required for some internal ESPHome functions)
 api:
@@ -91,6 +95,8 @@ i2c:
   id: i2c_bus
   sda: GPIO21
   scl: GPIO22
+  scan: false # Don't scan bus on boot (can hang with flaky display)
+  frequency: 10kHz # Slow but stable on 2m wires with cheap SH1106
 
 # OneWire Bus for DS18B20 Temperature Sensors
 # NOTE: 2m wires — needs 4.7kΩ pull-up to 3.3V for reliable reads
@@ -475,6 +481,11 @@ sensor:
     id: wifi_signal_sensor
     update_interval: 60s
 
+  - platform: debug
+    loop_time:
+      name: "Loop Time"
+      id: loop_time_sensor
+
 # -------------------------------------------------------------------------
 # BINARY SENSORS (UI Status Flags)
 # -------------------------------------------------------------------------
@@ -722,6 +733,11 @@ text_sensor:
       name: "Reset Reason"
       id: reset_reason
 
+  - platform: template
+    name: "Diagnostic Message"
+    id: diag_msg
+    icon: "mdi:message-alert"
+
 # -------------------------------------------------------------------------
 # OLED DISPLAY
 # -------------------------------------------------------------------------
@@ -737,6 +753,8 @@ display:
     address: 0x3C
     update_interval: 1s
     lambda: |-
+      unsigned long _disp_start = esphome::millis();
+
       // Clear display buffer first to prevent artifacts
       it.fill(COLOR_OFF);
 
@@ -761,6 +779,27 @@ display:
       // Tank Temperature - Bottom
       if (!std::isnan(id(tank_temp).state)) {
         it.printf(0, 48, id(roboto), "Tank: %.0f C", id(tank_temp).state);
+      }
+
+      // Timing diagnostics
+      unsigned long _disp_dur = esphome::millis() - _disp_start;
+      if (_disp_dur > 500) {
+        char _d[64];
+        snprintf(_d, sizeof(_d), "Display took %lums!", _disp_dur);
+        id(diag_msg).publish_state(_d);
+        ESP_LOGW("display", "Slow display: %lums", _disp_dur);
+      } else {
+        static unsigned long _last_diag_log = 0;
+        if (esphome::millis() - _last_diag_log > 30000) {
+          char _d[64];
+          float _lt = id(loop_time_sensor).state;
+          if (std::isnan(_lt))
+            snprintf(_d, sizeof(_d), "Display: %lums", _disp_dur);
+          else
+            snprintf(_d, sizeof(_d), "Display: %lums, Loop: %.0fms", _disp_dur, _lt);
+          id(diag_msg).publish_state(_d);
+          _last_diag_log = esphome::millis();
+        }
       }
 
 interval:
