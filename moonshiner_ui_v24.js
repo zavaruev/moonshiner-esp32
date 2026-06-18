@@ -303,8 +303,8 @@
 
             .theme-toggle {
                 position: relative;
-                width: 32px;
-                height: 32px;
+                width: 24px;
+                height: 24px;
                 padding: 0;
                 border-radius: 50%;
                 border: 1px solid var(--card-border);
@@ -313,7 +313,7 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 15px;
+                font-size: 12px;
                 transition: all 0.2s;
                 flex-shrink: 0;
             }
@@ -661,8 +661,6 @@
 
                 .card { padding: 16px; border-radius: 14px; }
 
-                .top-bar { flex-wrap: wrap; }
-
                 .sensor-grid { grid-template-columns: 1fr; }
 
                 .control-group { grid-template-columns: 1fr; }
@@ -675,7 +673,14 @@
 
                 .card { padding: 12px; }
 
-                .top-bar { flex-direction: column; align-items: flex-start; }
+                .top-bar { flex-wrap: nowrap; }
+                .top-bar-left { flex-shrink: 1; min-width: 0; }
+                .top-bar-right { flex-shrink: 0; }
+                .badge-row { flex-wrap: wrap; gap: 4px; }
+                .badge { font-size: 9px; padding: 3px 6px; }
+                .vol-mini input[type="range"] { width: 40px; }
+                .vol-mini .vol-val { font-size: 9px; min-width: 14px; }
+                .vol-mini .vol-icon { font-size: 10px; }
 
                 .card-title { font-size: 18px; }
 
