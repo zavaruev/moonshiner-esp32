@@ -158,9 +158,13 @@
             /* === Top Bar === */
             .top-bar {
                 display: flex;
-                justify-content: flex-end;
+                justify-content: space-between;
                 align-items: center;
                 gap: 12px;
+            }
+            .top-bar-left {
+                display: flex;
+                align-items: center;
             }
 
             .top-bar-right {
@@ -706,6 +710,9 @@
         app.innerHTML = `
             <div class="card">
                 <div class="top-bar">
+                    <div class="top-bar-left">
+                        <span class="status-msg" id="val-msg">Connecting...</span>
+                    </div>
                     <div class="top-bar-right">
                         <div class="top-bar-utils">
                             <div class="vol-mini">
@@ -727,8 +734,7 @@
                     </div>
                 </div>
 
-                <div class="status-bar" style="margin-top:8px;">
-                    <span class="status-msg" id="val-msg">Connecting...</span>
+                <div style="margin-top:8px;">
                     <button class="btn btn-danger" id="btn-restart" style="display:none;">Restart</button>
                 </div>
             </div>
