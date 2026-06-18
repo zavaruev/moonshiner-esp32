@@ -100,7 +100,6 @@ one_wire:
   - platform: gpio
     pin: GPIO4
     id: dallas_hub
-    use_parasitic_power: true # Helps with voltage drop on long 2m wires
 
 # -------------------------------------------------------------------------
 # GLOBAL VARIABLES
@@ -432,6 +431,7 @@ sensor:
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 0
+    parasitic_power: true
     update_interval: 5s
     filters:
       - median:
@@ -455,6 +455,7 @@ sensor:
     device_class: temperature
     state_class: measurement
     accuracy_decimals: 0
+    parasitic_power: true
     update_interval: 5s
     filters:
       - median:
