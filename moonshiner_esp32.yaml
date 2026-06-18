@@ -47,7 +47,7 @@ esp32:
     version: 5.5.0
     sdkconfig_options:
       CONFIG_LWIP_MAX_SOCKETS: "16" # Increase max sockets from 10 to 16 for multiple simultaneous connections
-      CONFIG_ESP_TASK_WDT_TIMEOUT_S: "10" # Bump TWDT from 5s to 10s (I2C display can stall)
+      CONFIG_ESP_TASK_WDT_TIMEOUT_S: "15" # Bump TWDT from 5s to 15s (long OneWire retries)
       CONFIG_ESP_TASK_WDT_PANIC: "y" # Print backtrace on TWDT (visible via serial if connected)
 
 # Enable logging (Level INFO is good for production)
@@ -100,6 +100,7 @@ one_wire:
   - platform: gpio
     pin: GPIO4
     id: dallas_hub
+    use_parasitic_power: true # Helps with voltage drop on long 2m wires
 
 # -------------------------------------------------------------------------
 # GLOBAL VARIABLES
@@ -254,17 +255,18 @@ number:
     mode: slider
     icon: "mdi:valve"
 
-  # Heater Power Control (0-1023)
+  # Heater Power Control (0-2750 W)
   - platform: template
     name: "Heater Power" # Web ID: number-heater_power
     id: heat_power
     optimistic: true
     restore_value: true
     min_value: 0
-    max_value: 1023
-    step: 1
+    max_value: 2750
+    step: 10
     initial_value: 0
     mode: box
+    unit_of_measurement: "W"
     icon: "mdi:fire"
     on_value:
       then:
@@ -429,7 +431,7 @@ sensor:
     unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
-    accuracy_decimals: 4
+    accuracy_decimals: 0
     update_interval: 5s
     filters:
       - median:
@@ -452,7 +454,7 @@ sensor:
     unit_of_measurement: "°C"
     device_class: temperature
     state_class: measurement
-    accuracy_decimals: 4
+    accuracy_decimals: 0
     update_interval: 5s
     filters:
       - median:
@@ -650,7 +652,7 @@ script:
           if (id(status_message).state != "RUNNING") {
              id(status_message).publish_state("RUNNING");
           }
-           id(heater_output).set_level(id(heat_power).state / 1023.0);
+            id(heater_output).set_level(id(heat_power).state / 2750.0);
 
            // Hysteresis Logic
            // Target = 78.0, Delta = 0.3

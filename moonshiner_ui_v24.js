@@ -758,8 +758,8 @@
                     <div class="control-item full">
                         <label>Heater Power</label>
                         <div class="input-row">
-                            <input type="number" id="in-heat" step="1" min="0" max="1023" value="0">
-                            <input type="range" id="in-heat-slider" min="0" max="1023" step="1" value="0">
+                            <input type="number" id="in-heat" step="10" min="0" max="2750" value="0">
+                            <input type="range" id="in-heat-slider" min="0" max="2750" step="10" value="0">
                         </div>
                     </div>
                 </div>
