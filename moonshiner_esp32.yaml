@@ -263,7 +263,7 @@ number:
     min_value: 0
     max_value: 2750
     step: 10
-    initial_value: 0
+    initial_value: 1747
     mode: box
     unit_of_measurement: "W"
     icon: "mdi:fire"
