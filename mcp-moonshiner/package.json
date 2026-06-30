@@ -9,9 +9,16 @@
   },
   "scripts": {
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "vitest run"
   },
-  "keywords": ["moonshiner", "esp32", "mcp", "distillation", "esphome"],
+  "keywords": [
+    "moonshiner",
+    "esp32",
+    "mcp",
+    "distillation",
+    "esphome"
+  ],
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
@@ -19,6 +26,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.9.3",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
   }
 }
