@@ -7,3 +7,4 @@
 # MCP server
 mcp-moonshiner/node_modules/
 mcp-moonshiner/dist/
+node_modules/

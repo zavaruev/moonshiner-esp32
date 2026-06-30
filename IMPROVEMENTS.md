@@ -1,55 +1,55 @@
-# Предложения по улучшению Moonshiner
+# Moonshiner — Improvement Notes
 
-## Проблема: Неравномерность отбора при низких значениях PWM
+## Problem: Uneven collection at low PWM values
 
-### Текущая реализация
-- Платформа: `slow_pwm` с периодом 1 секунда
-- При значении 20 (из 1023):
+### Current Implementation
+- Platform: `slow_pwm` with 1s period
+- At value 20 (out of 1023):
   - ON: 20ms
   - OFF: 980ms
-- Результат: длительные паузы, неравномерный отбор
+- Result: long pauses, uneven collection
 
-### Ограничения электромагнитных клапанов
-- Время открытия: 30-100ms
-- Время закрытия: 20-50ms
-- Минимальный импульс для полного открытия: ~200-500ms
+### Solenoid Valve Limitations
+- Opening time: 30–100ms
+- Closing time: 20–50ms
+- Minimum pulse for full opening: ~200–500ms
 
 ---
 
-## Предложение: Пульсный режим вместо PWM
+## Solution: Pulse Mode instead of PWM
 
-### Концепция
-Вместо изменения duty cycle используем:
-- **Фиксированная длительность импульса** (500ms) — клапан успевает полностью открыться
-- **Переменный интервал** — зависит от значения 0-1023
+### Concept
+Instead of varying duty cycle, use:
+- **Fixed pulse width** (500ms) — valve opens fully every time
+- **Variable interval** — depends on value 0–1023
 
-### Формула эквивалентности
+### Equivalent Formula
 ```
-interval_ms = pulse_width_ms × 1023 / value
+interval_ms = pulse_width_ms * 1023 / value
 ```
 
-Сохраняет тот же средний поток, что и текущий PWM!
+Maintains the same average flow as the original PWM!
 
-### Таблица эквивалентов (pulse_width = 500ms)
+### Equivalent Table (pulse_width = 500ms)
 
-| Значение | Интервал | Поведение |
-|----------|----------|-----------|
-| 20 | 25.6 сек | 500ms ON каждые 25 сек |
-| 50 | 10.2 сек | 500ms ON каждые 10 сек |
-| 100 | 5.1 сек | 500ms ON каждые 5 сек |
-| 200 | 2.6 сек | 500ms ON каждые 2.6 сек |
-| 500 | 1 сек | Почти постоянно |
-| 1023 | 0.5 сек | Постоянно ON |
+| Value | Interval | Behavior |
+|-------|----------|----------|
+| 20 | 25.6s | 500ms ON every 25s |
+| 50 | 10.2s | 500ms ON every 10s |
+| 100 | 5.1s | 500ms ON every 5s |
+| 200 | 2.6s | 500ms ON every 2.6s |
+| 500 | 1s | Nearly always ON |
+| 1023 | 0.5s | Always ON |
 
-### Преимущества
-- ✅ Клапан полностью открывается (500ms достаточно)
-- ✅ Жидкость реально течёт (не "микрокапля" за 20ms)
-- ✅ Существующие значения 0-1023 сохраняют тот же средний поток
-- ✅ Более предсказуемый и равномерный отбор
-- ✅ Можно настроить pulse_width под конкретный клапан
+### Advantages
+- Valve opens fully (500ms is enough)
+- Liquid actually flows (no "micro-drops" at 20ms)
+- Existing 0–1023 values keep the same average flow
+- More predictable and even collection
+- `pulse_width` can be tuned for specific valves
 
-### Реализация в ESPHome
-Заменить `slow_pwm` на `interval` + `lambda` + `gpio`:
+### ESPHome Implementation
+Replace `slow_pwm` with `interval` + `lambda` + `gpio`:
 
 ```yaml
 globals:
@@ -68,20 +68,20 @@ interval:
       - lambda: |-
           const int PULSE_WIDTH_MS = 500;
           float value = id(valve_low_setting).state;
-          
+
           if (value <= 0) {
             id(valve_low_gpio).turn_off();
             return;
           }
-          
+
           if (value >= 1023) {
             id(valve_low_gpio).turn_on();
             return;
           }
-          
+
           unsigned long now = millis();
           unsigned long interval_ms = (PULSE_WIDTH_MS * 1023) / value;
-          
+
           if (now >= id(valve_low_next_pulse)) {
             id(valve_low_gpio).turn_on();
             id(valve_low_next_pulse) = now + interval_ms;
@@ -92,28 +92,28 @@ interval:
 
 ---
 
-## Статус: ✅ Реализовано (2025-12-04)
+## Status: ✅ Implemented (2025-12-04)
 
-Пульсный режим внедрён с параметром `PULSE_WIDTH_MS = 100` (5x быстрее от изначальных 500ms).
+Pulse mode deployed with `PULSE_WIDTH_MS = 100` (5x faster than the original 500ms).
 
 ---
 
-## TODO: Коэффициент отбора не должен влиять на верхний клапан
+## TODO: Collection coefficient must not affect upper valve
 
-**Дата**: 2025-12-05  
-**Приоритет**: Средний
+**Date**: 2025-12-05
+**Priority**: Medium
 
-### Текущая проблема
-Коэффициент `coef_otbora` сейчас применяется к обоим клапанам:
-- `valve_high_output` (верхний) — НЕ должен зависеть от коэффициента
-- `valve_low_output` (нижний) — должен зависеть от коэффициента
+### Problem
+`coef_otbora` currently applies to both valves:
+- `valve_high_output` (upper) — should NOT depend on coefficient
+- `valve_low_output` (lower) — should depend on coefficient
 
-### Места для исправления
-1. `on_value` для `valve_high_setting` (строка ~261) — убрать `* id(coef_otbora).state`
-2. `control_logic` (строка ~653) — не применять `current_coef` к `vh`
+### Fix Locations
+1. `on_value` for `valve_high_setting` — remove `* id(coef_otbora).state`
+2. `control_logic` — don't apply `current_coef` to `vh`
 
-### Ожидаемое поведение
-- Верхний клапан работает строго по значению слайдера
-- Нижний клапан модифицируется коэффициентом
+### Expected Behavior
+- Upper valve runs strictly at its slider value
+- Lower valve is modified by the coefficient
 
-**Статус**: ✅ Реализовано (2025-12-05)
+**Status**: ✅ Implemented (2025-12-05)
