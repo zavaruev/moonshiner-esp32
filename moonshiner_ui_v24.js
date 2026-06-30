@@ -844,7 +844,7 @@
                             <div class="slider-wrap">
                                 <input type="range" id="in-heat-slider" min="0" max="2750" step="10" value="0">
                                 <div class="ss-marker" style="left:63.6%"></div>
-                                <div class="ss-label" style="left:63.6%" data-target="in-heat" data-value="1750">Working Power</div>
+                                <div class="ss-label" style="left:57.3%" data-target="in-heat" data-value="1575">Working Power</div>
                                 <div class="ss-marker" style="left:100%"></div>
                                 <div class="ss-label" style="left:100%;transform:translateX(-100%)" data-target="in-heat" data-value="2750">Preheat</div>
                             </div>
