@@ -48,14 +48,12 @@ async function readEntity(type: string, id: string): Promise<TempReading> {
 export const readSensor = (id: string) => readEntity('sensor', id);
 export const readNumber = (id: string) => readEntity('number', id);
 export const readTextSensor = async (id: string): Promise<string> => {
-  const raw = await doFetch(`/text_sensor/${id}`);
-  const { state } = parseState(raw);
-  return state;
+  const res = await readEntity('text_sensor', id);
+  return res.raw;
 };
 export const readBinarySensor = async (id: string): Promise<boolean> => {
-  const raw = await doFetch(`/binary_sensor/${id}`);
-  const { state } = parseState(raw);
-  return state === 'ON';
+  const res = await readEntity('binary_sensor', id);
+  return res.raw === 'ON';
 };
 
 export const setNumber = (id: string, value: number) => doPost(`/number/${id}/set?value=${value}`);
