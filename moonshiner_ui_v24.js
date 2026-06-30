@@ -1045,6 +1045,40 @@
             };
         }
 
+        function bindNumericInput(entityId, cfg, input, slider, apiPath) {
+            const debouncedUpdate = debounce((value) => {
+                var apiValue = cfg.pct ? Math.round(value * 1023 / 100) : value;
+                input.classList.add('sending');
+                fetch('/' + apiPath + '/set?value=' + apiValue, { method: 'POST' })
+                    .then(() => input.classList.remove('sending'))
+                    .catch(err => { input.classList.remove('sending'); console.error('Failed to update ' + entityId + ':', err); });
+            }, 400);
+
+            input.addEventListener('change', e => {
+                const val = parseFloat(e.target.value);
+                if (!isNaN(val)) debouncedUpdate(val);
+            });
+
+            if (slider) {
+                input.addEventListener('input', e => {
+                    slider.value = e.target.value;
+                });
+
+                slider.addEventListener('input', e => {
+                    input.value = e.target.value;
+                    debouncedUpdate(e.target.value);
+                });
+            }
+        }
+
+        function bindSwitchInput(entityId, switchEl, apiPath) {
+            switchEl.addEventListener('change', e => {
+                const cmd = e.target.checked ? 'turn_on' : 'turn_off';
+                fetch('/' + apiPath + '/' + cmd, { method: 'POST' })
+                    .catch(err => console.error('Failed to toggle ' + entityId + ':', err));
+            });
+        }
+
         Object.keys(entities).forEach(entityId => {
             const cfg = entities[entityId];
 
@@ -1054,29 +1088,7 @@
                 const apiPath = cfg.api;
 
                 if (input && apiPath) {
-                    const debouncedUpdate = debounce((value) => {
-                        var apiValue = cfg.pct ? Math.round(value * 1023 / 100) : value;
-                        input.classList.add('sending');
-                        fetch('/' + apiPath + '/set?value=' + apiValue, { method: 'POST' })
-                            .then(() => input.classList.remove('sending'))
-                            .catch(err => { input.classList.remove('sending'); console.error('Failed to update ' + entityId + ':', err); });
-                    }, 400);
-
-                    input.addEventListener('change', e => {
-                        const val = parseFloat(e.target.value);
-                        if (!isNaN(val)) debouncedUpdate(val);
-                    });
-
-                    if (slider) {
-                        input.addEventListener('input', e => {
-                            slider.value = e.target.value;
-                        });
-
-                        slider.addEventListener('input', e => {
-                            input.value = e.target.value;
-                            debouncedUpdate(e.target.value);
-                        });
-                    }
+                    bindNumericInput(entityId, cfg, input, slider, apiPath);
                 }
             }
 
@@ -1085,11 +1097,7 @@
                 const apiPath = cfg.api;
 
                 if (switchEl && apiPath) {
-                    switchEl.addEventListener('change', e => {
-                        const cmd = e.target.checked ? 'turn_on' : 'turn_off';
-                        fetch('/' + apiPath + '/' + cmd, { method: 'POST' })
-                            .catch(err => console.error('Failed to toggle ' + entityId + ':', err));
-                    });
+                    bindSwitchInput(entityId, switchEl, apiPath);
                 }
             }
         });
