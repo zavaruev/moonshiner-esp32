@@ -1,36 +1,69 @@
 import { describe, it, expect } from 'vitest';
-import { parseState } from './esp32-api.js';
+import { parseState } from './esp32-api';
 
 describe('parseState', () => {
   it('should parse valid JSON with a numeric value', () => {
-    const raw = JSON.stringify({ id: 'sensor-1', value: 42.5, state: '42.5' });
-    expect(parseState(raw)).toEqual({ value: 42.5, state: '42.5' });
+    const raw = JSON.stringify({ id: 'sensor1', value: 42.5, state: '42.5' });
+    const result = parseState(raw);
+    expect(result).toEqual({ value: 42.5, state: '42.5' });
   });
 
   it('should parse valid JSON with a null value', () => {
-    const raw = JSON.stringify({ id: 'sensor-2', value: null, state: 'unknown' });
-    expect(parseState(raw)).toEqual({ value: null, state: 'unknown' });
+    const raw = JSON.stringify({ id: 'sensor2', value: null, state: 'unknown' });
+    const result = parseState(raw);
+    expect(result).toEqual({ value: null, state: 'unknown' });
   });
 
-  it('should fallback to plain text if JSON starts with { but is invalid', () => {
-    const raw = '{invalid-json';
-    expect(parseState(raw)).toEqual({ value: null, state: '{invalid-json' });
+  it('should parse valid JSON with a missing value (undefined -> null)', () => {
+    const raw = JSON.stringify({ id: 'sensor3', state: 'ON' });
+    const result = parseState(raw);
+    expect(result).toEqual({ value: null, state: 'ON' });
   });
 
-  it('should fallback to plain text if JSON is valid but does not have value/state properties expected (it should just use what it gets, or fallback on null/undefined)', () => {
+  it('should fall through to plain text parsing for invalid JSON starting with {', () => {
+    const raw = '{invalid-json, state: "ON"}';
+    const result = parseState(raw);
+    expect(result).toEqual({ value: null, state: '{invalid-json, state: "ON"}' });
+  });
+
+  it('should fallback to plain text if JSON is valid but does not have value/state properties', () => {
     const raw = JSON.stringify({ id: 'sensor-3' });
-    // j.value is undefined -> null, j.state is undefined -> undefined (though state is supposed to be string)
-    // Actually the function returns j.value ?? null, and j.state
     expect(parseState(raw)).toEqual({ value: null, state: undefined });
   });
 
   it('should parse plain text numbers', () => {
     const raw = '42.5';
-    expect(parseState(raw)).toEqual({ value: 42.5, state: '42.5' });
+    const result = parseState(raw);
+    expect(result).toEqual({ value: 42.5, state: '42.5' });
   });
 
-  it('should parse plain text non-numbers as null value', () => {
+  it('should parse non-numeric plain text as null value', () => {
     const raw = 'ON';
-    expect(parseState(raw)).toEqual({ value: null, state: 'ON' });
+    const result = parseState(raw);
+    expect(result).toEqual({ value: null, state: 'ON' });
+  });
+
+  it('should parse non-numeric plain text strings like unknown as null value', () => {
+    const raw = 'unknown';
+    const result = parseState(raw);
+    expect(result).toEqual({ value: null, state: 'unknown' });
+  });
+
+  it('should parse empty string as null value', () => {
+    const raw = '';
+    const result = parseState(raw);
+    expect(result).toEqual({ value: null, state: '' });
+  });
+
+  it('falls back to plain text for malformed JSON', () => {
+    const raw = '{badjson';
+    const result = parseState(raw);
+    expect(result).toEqual({ value: null, state: '{badjson' });
+  });
+
+  it('falls back to plain text for malformed JSON starting with curly brace but containing a valid number at start', () => {
+    const raw = '{123';
+    const result = parseState(raw);
+    expect(result).toEqual({ value: null, state: '{123' });
   });
 });
