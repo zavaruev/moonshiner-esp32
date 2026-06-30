@@ -23,8 +23,6 @@ describe('parseState', () => {
   it('should fall through to plain text parsing for invalid JSON starting with {', () => {
     const raw = '{invalid-json, state: "ON"}';
     const result = parseState(raw);
-    // Since it's invalid JSON, it falls through to parseFloat("{invalid-json, state: "ON"}")
-    // which is NaN.
     expect(result).toEqual({ value: null, state: '{invalid-json, state: "ON"}' });
   });
 
@@ -50,5 +48,17 @@ describe('parseState', () => {
     const raw = '';
     const result = parseState(raw);
     expect(result).toEqual({ value: null, state: '' });
+  });
+
+  it('falls back to plain text for malformed JSON', () => {
+    const raw = '{badjson';
+    const result = parseState(raw);
+    expect(result).toEqual({ value: null, state: '{badjson' });
+  });
+
+  it('falls back to plain text for malformed JSON starting with curly brace but containing a valid number at start', () => {
+    const raw = '{123';
+    const result = parseState(raw);
+    expect(result).toEqual({ value: null, state: '{123' });
   });
 });
