@@ -6,7 +6,7 @@ interface EspEntityJson {
   state: string;
 }
 
-function parseState(raw: string): { value: number | null; state: string } {
+export function parseState(raw: string): { value: number | null; state: string } {
   // ESPHome v3 returns JSON for sensors/numbers
   if (raw.startsWith('{')) {
     try {
