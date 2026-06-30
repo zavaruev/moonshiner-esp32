@@ -1,0 +1,54 @@
+import { describe, it, expect } from 'vitest';
+import { parseState } from './esp32-api';
+
+describe('parseState', () => {
+  it('should parse valid JSON with a numeric value', () => {
+    const raw = JSON.stringify({ id: 'sensor1', value: 42.5, state: '42.5' });
+    const result = parseState(raw);
+    expect(result).toEqual({ value: 42.5, state: '42.5' });
+  });
+
+  it('should parse valid JSON with a null value', () => {
+    const raw = JSON.stringify({ id: 'sensor2', value: null, state: 'unknown' });
+    const result = parseState(raw);
+    expect(result).toEqual({ value: null, state: 'unknown' });
+  });
+
+  it('should parse valid JSON with a missing value (undefined -> null)', () => {
+    const raw = JSON.stringify({ id: 'sensor3', state: 'ON' });
+    const result = parseState(raw);
+    expect(result).toEqual({ value: null, state: 'ON' });
+  });
+
+  it('should fall through to plain text parsing for invalid JSON starting with {', () => {
+    const raw = '{invalid-json, state: "ON"}';
+    const result = parseState(raw);
+    // Since it's invalid JSON, it falls through to parseFloat("{invalid-json, state: "ON"}")
+    // which is NaN.
+    expect(result).toEqual({ value: null, state: '{invalid-json, state: "ON"}' });
+  });
+
+  it('should parse plain text numbers', () => {
+    const raw = '42.5';
+    const result = parseState(raw);
+    expect(result).toEqual({ value: 42.5, state: '42.5' });
+  });
+
+  it('should parse non-numeric plain text as null value', () => {
+    const raw = 'ON';
+    const result = parseState(raw);
+    expect(result).toEqual({ value: null, state: 'ON' });
+  });
+
+  it('should parse non-numeric plain text strings like unknown as null value', () => {
+    const raw = 'unknown';
+    const result = parseState(raw);
+    expect(result).toEqual({ value: null, state: 'unknown' });
+  });
+
+  it('should parse empty string as null value', () => {
+    const raw = '';
+    const result = parseState(raw);
+    expect(result).toEqual({ value: null, state: '' });
+  });
+});
