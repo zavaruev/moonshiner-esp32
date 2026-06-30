@@ -1029,14 +1029,6 @@
                 el.scrollTop = el.scrollHeight;
             }
         }
-        function renderLog() {
-            var el = document.getElementById('log-area');
-            if (el) {
-                el.innerHTML = logBuffer.map(function (l) { return '<div>' + l.replace(/</g, '&lt;') + '</div>'; }).join('');
-                el.scrollTop = el.scrollHeight;
-            }
-        }
-
         function debounce(func, wait) {
             let timeout;
             return function (...args) {
