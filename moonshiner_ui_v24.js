@@ -1025,10 +1025,18 @@
             if (logBuffer.length > MAX_LOG) logBuffer.shift();
             var el = document.getElementById('log-area');
             if (el) {
-                el.innerHTML = logBuffer.map(function (l) { return '<div>' + l.replace(/</g, '&lt;') + '</div>'; }).join('');
+                el.innerHTML = logBuffer.map(function (l) { return '<div>' + l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;') + '</div>'; }).join('');
                 el.scrollTop = el.scrollHeight;
             }
         }
+        function renderLog() {
+            var el = document.getElementById('log-area');
+            if (el) {
+                el.innerHTML = logBuffer.map(function (l) { return '<div>' + l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;') + '</div>'; }).join('');
+                el.scrollTop = el.scrollHeight;
+            }
+        }
+
         function debounce(func, wait) {
             let timeout;
             return function (...args) {
@@ -1051,7 +1059,7 @@
                         input.classList.add('sending');
                         fetch('/' + apiPath + '/set?value=' + apiValue, { method: 'POST' })
                             .then(() => input.classList.remove('sending'))
-                            .catch(err => { input.classList.remove('sending'); console.error('Failed to update ' + entityId + ':', err); });
+                            .catch(err => { input.classList.remove('sending'); addLog('Failed to update ' + entityId + ': ' + (err.message || err)); });
                     }, 400);
 
                     input.addEventListener('change', e => {
@@ -1080,7 +1088,7 @@
                     switchEl.addEventListener('change', e => {
                         const cmd = e.target.checked ? 'turn_on' : 'turn_off';
                         fetch('/' + apiPath + '/' + cmd, { method: 'POST' })
-                            .catch(err => console.error('Failed to toggle ' + entityId + ':', err));
+                            .catch(err => addLog('Failed to toggle ' + entityId + ': ' + (err.message || err)));
                     });
                 }
             }
@@ -1094,7 +1102,7 @@
                     .then(() => {
                         restartBtn.style.display = 'none';
                     })
-                    .catch(err => console.error('Failed to restart process:', err));
+                    .catch(err => addLog('Failed to restart process: ' + (err.message || err)));
             });
         }
 
@@ -1196,7 +1204,7 @@
             const data = JSON.parse(e.data);
 
             if (!entities[data.id]) {
-                console.warn('Unknown entity: ' + data.id + ' = ' + data.state);
+                addLog('Unknown entity: ' + data.id + ' = ' + data.state);
                 return;
             }
 
