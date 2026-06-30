@@ -1025,14 +1025,14 @@
             if (logBuffer.length > MAX_LOG) logBuffer.shift();
             var el = document.getElementById('log-area');
             if (el) {
-                el.innerHTML = logBuffer.map(function (l) { return '<div>' + l.replace(/</g, '&lt;') + '</div>'; }).join('');
+                el.innerHTML = logBuffer.map(function (l) { return '<div>' + l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;') + '</div>'; }).join('');
                 el.scrollTop = el.scrollHeight;
             }
         }
         function renderLog() {
             var el = document.getElementById('log-area');
             if (el) {
-                el.innerHTML = logBuffer.map(function (l) { return '<div>' + l.replace(/</g, '&lt;') + '</div>'; }).join('');
+                el.innerHTML = logBuffer.map(function (l) { return '<div>' + l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;') + '</div>'; }).join('');
                 el.scrollTop = el.scrollHeight;
             }
         }
