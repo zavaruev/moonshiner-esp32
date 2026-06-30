@@ -1152,9 +1152,15 @@
             diagArrow.textContent = hidden ? '\u25BC' : '\u25B6';
         });
 
+        const colTempCard = document.getElementById('col-temp-card');
+        const tankTempCard = document.getElementById('tank-temp-card');
+        const colTempArc = document.getElementById('col-temp-arc');
+        const tankTempArc = document.getElementById('tank-temp-arc');
+
         function updateTempVisuals(sensorId, tempC) {
-            const card = document.getElementById(sensorId === 'sensor-column_temperature' ? 'col-temp-card' : 'tank-temp-card');
-            const arc = document.getElementById(sensorId === 'sensor-column_temperature' ? 'col-temp-arc' : 'tank-temp-arc');
+            const isCol = sensorId === 'sensor-column_temperature';
+            const card = isCol ? colTempCard : tankTempCard;
+            const arc = isCol ? colTempArc : tankTempArc;
             if (!card || tempC === null) return;
             card.classList.remove('temp-cold', 'temp-warm', 'temp-hot');
             const frac = Math.min(1, Math.max(0, (tempC - 20) / 80));
