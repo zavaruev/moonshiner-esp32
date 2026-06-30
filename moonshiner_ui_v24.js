@@ -1045,6 +1045,11 @@
             };
         }
 
+        // Export for testing
+        if (typeof module !== 'undefined' && module.exports) {
+            module.exports.debounce = debounce;
+        }
+
         Object.keys(entities).forEach(entityId => {
             const cfg = entities[entityId];
 

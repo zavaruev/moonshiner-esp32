@@ -1,43 +1,55 @@
-import { test, describe, afterEach } from 'node:test';
-import assert from 'node:assert';
-import { setNumber, toggleSwitch, pressButton } from './esp32-api.ts';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { readSensor } from './esp32-api';
 
-describe('doPost network errors', () => {
+// We test readSensor as it is a minimal wrapper over doFetch
+// doFetch is not exported directly, so we test it via the exposed API readSensor
+describe('doFetch (via readSensor)', () => {
+  const originalFetch = global.fetch;
+  const mockFetch = vi.fn();
+
+  beforeEach(() => {
+    global.fetch = mockFetch;
+  });
+
   afterEach(() => {
-    // Note: t.mock.method automatically restores the mock after the test if it belongs to the test context.
-    // We don't have to manually restore it if we attach it to the test context `t`.
+    global.fetch = originalFetch;
+    vi.restoreAllMocks();
+    mockFetch.mockClear();
   });
 
-  test('should throw error on HTTP 500 for setNumber', async (t) => {
-    t.mock.method(global, 'fetch', async () => {
-      return new Response(null, { status: 500 });
+  it('should return successfully when fetch returns a 200 OK', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      text: async () => '{"value": 12.3, "state": "12.3"}'
     });
 
-    await assert.rejects(
-      () => setNumber('test_number', 42),
-      { message: 'HTTP 500 on POST /number/test_number/set?value=42' }
+    const result = await readSensor('test_sensor');
+    expect(result).toEqual({ entity: 'test_sensor', value: 12.3, raw: '12.3' });
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/sensor/test_sensor'),
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
     );
   });
 
-  test('should throw error on HTTP 404 for toggleSwitch', async (t) => {
-    t.mock.method(global, 'fetch', async () => {
-      return new Response(null, { status: 404 });
+  it('should throw an error when fetch returns a 404', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
     });
 
-    await assert.rejects(
-      () => toggleSwitch('test_switch', true),
-      { message: 'HTTP 404 on POST /switch/test_switch/turn_on' }
-    );
+    await expect(readSensor('test_sensor')).rejects.toThrow('HTTP 404 on /sensor/test_sensor');
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 
-  test('should throw error on network failure (fetch throws)', async (t) => {
-    t.mock.method(global, 'fetch', async () => {
-      throw new TypeError('fetch failed');
+  it('should throw an error when fetch returns a 500', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
     });
 
-    await assert.rejects(
-      () => pressButton('test_btn'),
-      { message: 'fetch failed' }
-    );
+    await expect(readSensor('test_sensor')).rejects.toThrow('HTTP 500 on /sensor/test_sensor');
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });
