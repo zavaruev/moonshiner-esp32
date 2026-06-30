@@ -46,8 +46,8 @@
 
 #### Status Messages in English
 - Changed from Russian to English:
-  - "Идет процесс..." → `RUNNING`
-  - "Отбор окончен успешно!" → `DONE`
+  - `RUNNING` (was "Идет процесс...")
+  - `DONE` (was "Отбор окончен успешно!")
 
 #### Adjusted Input Precision
 - **Delta**: `step: 0.01` (2 decimal places)
