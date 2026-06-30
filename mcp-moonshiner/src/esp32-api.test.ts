@@ -26,6 +26,11 @@ describe('parseState', () => {
     expect(result).toEqual({ value: null, state: '{invalid-json, state: "ON"}' });
   });
 
+  it('should fallback to plain text if JSON is valid but does not have value/state properties', () => {
+    const raw = JSON.stringify({ id: 'sensor-3' });
+    expect(parseState(raw)).toEqual({ value: null, state: undefined });
+  });
+
   it('should parse plain text numbers', () => {
     const raw = '42.5';
     const result = parseState(raw);
