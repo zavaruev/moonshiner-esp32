@@ -1,4 +1,4 @@
-const BASE = process.env.ESP32_URL || 'http://192.168.22.231';
+const BASE = process.env.ESP32_URL || 'https://192.168.22.231';
 
 interface EspEntityJson {
   id: string;

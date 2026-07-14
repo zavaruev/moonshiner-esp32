@@ -177,14 +177,14 @@ function parseArgs() {
       process.stderr.write(`Moonshiner ESP32 MCP Server v1.0.0
 
 Usage:
-  npx @moonshiner/mcp-server --url http://<esp32-ip>
+  npx @moonshiner/mcp-server --url https://<esp32-ip>
 
 Options:
-  --url <url>  ESP32 web interface URL (default: http://192.168.22.231)
+  --url <url>  ESP32 web interface URL (default: https://192.168.22.231)
   --help, -h   Show this help
 
 Example:
-  npx @moonshiner/mcp-server --url http://192.168.22.231
+  npx @moonshiner/mcp-server --url https://192.168.22.231
 `);
       process.exit(0);
     }
