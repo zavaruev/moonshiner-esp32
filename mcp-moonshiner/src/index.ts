@@ -67,7 +67,7 @@ server.tool(
   "get_entity",
   "Read state of any ESPHome entity by its ID (e.g. 'column_temperature', 'target_column_temp', 'status_message')",
   {
-    entity_id: z.string().describe("Entity ID without type prefix, e.g. 'column_temperature'"),
+    entity_id: z.string().regex(/^[a-zA-Z0-9_]+$/).describe("Entity ID without type prefix, e.g. 'column_temperature'"),
     type: z
       .enum(["sensor", "number", "text_sensor", "binary_sensor"])
       .default("sensor")
@@ -177,14 +177,14 @@ function parseArgs() {
       process.stderr.write(`Moonshiner ESP32 MCP Server v1.0.0
 
 Usage:
-  npx @moonshiner/mcp-server --url http://<esp32-ip>
+  npx @moonshiner/mcp-server --url https://<esp32-ip>
 
 Options:
-  --url <url>  ESP32 web interface URL (default: http://192.168.22.231)
+  --url <url>  ESP32 web interface URL (default: https://192.168.22.231)
   --help, -h   Show this help
 
 Example:
-  npx @moonshiner/mcp-server --url http://192.168.22.231
+  npx @moonshiner/mcp-server --url https://192.168.22.231
 `);
       process.exit(0);
     }
