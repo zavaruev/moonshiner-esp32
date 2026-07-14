@@ -39,7 +39,14 @@ export interface TempReading {
   raw: string;
 }
 
+export function validateId(id: string) {
+  if (!/^[a-zA-Z0-9_]+$/.test(id)) {
+    throw new Error(`Invalid entity ID: ${id}`);
+  }
+}
+
 async function readEntity(type: string, id: string): Promise<TempReading> {
+  validateId(id);
   const raw = await doFetch(`/${type}/${id}`);
   const { value, state } = parseState(raw);
   return { entity: id, value, raw: state };
@@ -56,9 +63,18 @@ export const readBinarySensor = async (id: string): Promise<boolean> => {
   return res.raw === 'ON';
 };
 
-export const setNumber = (id: string, value: number) => doPost(`/number/${id}/set?value=${value}`);
-export const toggleSwitch = (id: string, on: boolean) => doPost(`/switch/${id}/${on ? 'turn_on' : 'turn_off'}`);
-export const pressButton = (id: string) => doPost(`/button/${id}/press`);
+export const setNumber = (id: string, value: number) => {
+  validateId(id);
+  return doPost(`/number/${id}/set?value=${value}`);
+};
+export const toggleSwitch = (id: string, on: boolean) => {
+  validateId(id);
+  return doPost(`/switch/${id}/${on ? 'turn_on' : 'turn_off'}`);
+};
+export const pressButton = (id: string) => {
+  validateId(id);
+  return doPost(`/button/${id}/press`);
+};
 
 export async function getAllTemperatures(): Promise<{ column: TempReading; tank: TempReading }> {
   const [column, tank] = await Promise.all([
