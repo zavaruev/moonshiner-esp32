@@ -1033,7 +1033,7 @@
         var logAreaElement = null;
 
         function addLog(msg) {
-            var ts = new Date().toLocaleTimeString();
+            const ts = new Date().toLocaleTimeString();
             logBuffer.push(ts + ' ' + msg);
             if (logBuffer.length > MAX_LOG) logBuffer.shift();
             var el = logAreaElement || (logAreaElement = document.getElementById('log-area'));
