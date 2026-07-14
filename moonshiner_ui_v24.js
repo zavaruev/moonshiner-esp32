@@ -1072,12 +1072,16 @@
                 const apiPath = cfg.api;
 
                 if (input && apiPath) {
-                    const debouncedUpdate = debounce((value) => {
+                    const debouncedUpdate = debounce(async (value) => {
                         var apiValue = cfg.pct ? Math.round(value * 1023 / 100) : value;
                         input.classList.add('sending');
-                        fetch('/' + apiPath + '/set?value=' + apiValue, { method: 'POST' })
-                            .then(() => input.classList.remove('sending'))
-                            .catch(err => { input.classList.remove('sending'); addLog('Failed to update ' + entityId + ': ' + (err.message || err)); });
+                        try {
+                            await fetch('/' + apiPath + '/set?value=' + apiValue, { method: 'POST' });
+                        } catch (err) {
+                            addLog('Failed to update ' + entityId + ': ' + (err.message || err));
+                        } finally {
+                            input.classList.remove('sending');
+                        }
                     }, 400);
 
                     input.addEventListener('change', e => {
