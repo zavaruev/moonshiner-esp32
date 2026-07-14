@@ -1,7 +1,9 @@
-const BASE = process.env.ESP32_URL || 'https://192.168.22.231';
-const USER = process.env.ESP32_USER || 'admin';
-const PASS = process.env.ESP32_PASS || 'moonshine';
-const AUTH = 'Basic ' + Buffer.from(`${USER}:${PASS}`).toString('base64');
+const rawUrl = process.env.ESP32_URL || 'https://192.168.22.231';
+const parsed = new URL(rawUrl);
+const USER = parsed.username || process.env.ESP32_USER || 'admin';
+const PASS = parsed.password || process.env.ESP32_PASS || 'moonshine';
+const AUTH = USER ? 'Basic ' + Buffer.from(`${USER}:${PASS}`).toString('base64') : '';
+const BASE = `${parsed.protocol}//${parsed.host}`;
 export function parseState(raw) {
     // ESPHome v3 returns JSON for sensors/numbers
     if (raw.startsWith('{')) {
