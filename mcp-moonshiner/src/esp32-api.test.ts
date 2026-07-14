@@ -89,3 +89,51 @@ describe('parseState', () => {
     expect(result).toEqual({ value: null, state: '{123' });
   });
 });
+
+describe('API error handling (doFetch/doPost)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('doFetch should throw an error when response is not ok', async () => {
+    // We test this via readSensor which uses doFetch internally
+    const { readSensor } = await import('./esp32-api');
+
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found'
+    } as any);
+
+    await expect(readSensor('test_sensor')).rejects.toThrow('HTTP 404 on /sensor/test_sensor');
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/sensor/test_sensor'), expect.any(Object));
+  });
+
+  it('doPost should throw an error when response is not ok', async () => {
+    const { setNumber } = await import('./esp32-api');
+
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: 'Internal Server Error'
+    } as any);
+
+    await expect(setNumber('target_temp', 78.5)).rejects.toThrow('HTTP 500 on POST /number/target_temp/set?value=78.5');
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/number/target_temp/set?value=78.5'), expect.objectContaining({ method: 'POST' }));
+  });
+
+  it('should propagate network errors thrown by fetch', async () => {
+    const { readSensor } = await import('./esp32-api');
+
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockRejectedValueOnce(new Error('Network error'));
+
+    await expect(readSensor('test_sensor')).rejects.toThrow('Network error');
+  });
+});
