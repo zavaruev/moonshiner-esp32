@@ -1019,14 +1019,20 @@
         // Log ring buffer for diagnostics
         var logBuffer = [];
         var MAX_LOG = 20;
+        var logAreaElement = null;
+
         function addLog(msg) {
             var ts = new Date().toLocaleTimeString();
             logBuffer.push(ts + ' ' + msg);
             if (logBuffer.length > MAX_LOG) logBuffer.shift();
-            renderLog();
+            var el = logAreaElement || (logAreaElement = document.getElementById('log-area'));
+            if (el) {
+                el.innerHTML = logBuffer.map(function (l) { return '<div>' + l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;') + '</div>'; }).join('');
+                el.scrollTop = el.scrollHeight;
+            }
         }
         function renderLog() {
-            var el = document.getElementById('log-area');
+            var el = logAreaElement || (logAreaElement = document.getElementById('log-area'));
             if (el) {
                 el.innerHTML = '';
                 logBuffer.forEach(function (l) {
