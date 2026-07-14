@@ -9,6 +9,10 @@
         "--url",
         "http://192.168.22.231"
       ],
+      "env": {
+        "ESP32_USER": "admin",
+        "ESP32_PASS": "moonshine"
+      },
       "enabled": true
     }
   }

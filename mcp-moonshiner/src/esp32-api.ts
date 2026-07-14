@@ -1,4 +1,7 @@
 const BASE = process.env.ESP32_URL || 'https://192.168.22.231';
+const USER = process.env.ESP32_USER || 'admin';
+const PASS = process.env.ESP32_PASS || 'moonshine';
+const AUTH = 'Basic ' + Buffer.from(`${USER}:${PASS}`).toString('base64');
 
 interface EspEntityJson {
   id: string;
@@ -22,7 +25,7 @@ export function parseState(raw: string): { value: number | null; state: string }
 }
 
 async function doFetch(url: string): Promise<string> {
-  const res = await fetch(`${BASE}${url}`, { signal: AbortSignal.timeout(8000) });
+  const res = await fetch(`${BASE}${url}`, { headers: { Authorization: AUTH }, signal: AbortSignal.timeout(8000) });
   if (!res.ok) throw new Error(`HTTP ${res.status} on ${url}`);
   return res.text();
 }
@@ -30,6 +33,7 @@ async function doFetch(url: string): Promise<string> {
 async function doPost(url: string): Promise<void> {
   const res = await fetch(`${BASE}${url}`, {
     method: 'POST',
+    headers: { Authorization: AUTH },
     signal: AbortSignal.timeout(5000),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status} on POST ${url}`);
