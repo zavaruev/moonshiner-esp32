@@ -1023,16 +1023,17 @@
             var ts = new Date().toLocaleTimeString();
             logBuffer.push(ts + ' ' + msg);
             if (logBuffer.length > MAX_LOG) logBuffer.shift();
-            var el = document.getElementById('log-area');
-            if (el) {
-                el.innerHTML = logBuffer.map(function (l) { return '<div>' + l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;') + '</div>'; }).join('');
-                el.scrollTop = el.scrollHeight;
-            }
+            renderLog();
         }
         function renderLog() {
             var el = document.getElementById('log-area');
             if (el) {
-                el.innerHTML = logBuffer.map(function (l) { return '<div>' + l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;') + '</div>'; }).join('');
+                el.innerHTML = '';
+                logBuffer.forEach(function (l) {
+                    var div = document.createElement('div');
+                    div.textContent = l;
+                    el.appendChild(div);
+                });
                 el.scrollTop = el.scrollHeight;
             }
         }
