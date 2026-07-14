@@ -12,7 +12,9 @@ export function parseState(raw: string): { value: number | null; state: string }
     try {
       const j: EspEntityJson = JSON.parse(raw);
       return { value: j.value ?? null, state: j.state };
-    } catch { /* fall through */ }
+    } catch (e) {
+      console.error('JSON parse error:', e, 'Raw input:', raw);
+    }
   }
   // fallback: plain text
   const n = parseFloat(raw);
