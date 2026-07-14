@@ -701,7 +701,6 @@
 
         const app = document.createElement('div');
         app.id = 'custom-app';
-        document.body.appendChild(app);
 
         app.innerHTML = `
             <div class="card">
@@ -914,6 +913,7 @@
                 </div>
             </div>
         `;
+        document.body.appendChild(app);
 
         // === Theme Toggle ===
         const themeToggle = document.getElementById('btn-theme');
