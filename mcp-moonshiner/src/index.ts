@@ -67,7 +67,7 @@ server.tool(
   "get_entity",
   "Read state of any ESPHome entity by its ID (e.g. 'column_temperature', 'target_column_temp', 'status_message')",
   {
-    entity_id: z.string().describe("Entity ID without type prefix, e.g. 'column_temperature'"),
+    entity_id: z.string().regex(/^[a-zA-Z0-9_]+$/).describe("Entity ID without type prefix, e.g. 'column_temperature'"),
     type: z
       .enum(["sensor", "number", "text_sensor", "binary_sensor"])
       .default("sensor")

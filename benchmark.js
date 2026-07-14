@@ -58,7 +58,6 @@ function updateTempVisuals_optimized(sensorId, tempC) {
 
 const iterations = 1000000;
 
-console.log("Warming up...");
 for (let i = 0; i < 1000; i++) {
     updateTempVisuals_baseline('sensor-column_temperature', 40);
     updateTempVisuals_baseline('sensor-tank_temperature', 60);

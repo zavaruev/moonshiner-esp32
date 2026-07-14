@@ -1,5 +1,27 @@
 import { describe, it, expect } from 'vitest';
-import { parseState } from './esp32-api';
+import { parseState, readSensor, setNumber, toggleSwitch, pressButton } from './esp32-api';
+
+describe('security validation for entity IDs', () => {
+  const invalidIds = ['invalid/id', '../id', 'id?param=1', 'my-id-with-dashes', 'id!'];
+
+  invalidIds.forEach(id => {
+    it(`should throw on invalid ID in readSensor: ${id}`, async () => {
+      await expect(readSensor(id)).rejects.toThrow(`Invalid entity ID`);
+    });
+
+    it(`should throw on invalid ID in setNumber: ${id}`, () => {
+      expect(() => setNumber(id, 42)).toThrow(`Invalid entity ID`);
+    });
+
+    it(`should throw on invalid ID in toggleSwitch: ${id}`, () => {
+      expect(() => toggleSwitch(id, true)).toThrow(`Invalid entity ID`);
+    });
+
+    it(`should throw on invalid ID in pressButton: ${id}`, () => {
+      expect(() => pressButton(id)).toThrow(`Invalid entity ID`);
+    });
+  });
+});
 
 describe('parseState', () => {
   it('should parse valid JSON with a numeric value', () => {
