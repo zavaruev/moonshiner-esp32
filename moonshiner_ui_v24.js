@@ -981,6 +981,17 @@
             'binary_sensor-alarm_status': { st: 'st-alarm', cls: 'danger' }
         };
 
+        // Pre-cache DOM elements for entities to avoid dynamic lookups during critical paths
+        Object.keys(entities).forEach(function(id) {
+            const cfg = entities[id];
+            if (cfg.el) cfg._el = document.getElementById(cfg.el);
+            if (cfg.in) cfg._in = document.getElementById(cfg.in);
+            if (cfg.sl) cfg._sl = document.getElementById(cfg.sl);
+            if (cfg.sw) cfg._sw = document.getElementById(cfg.sw);
+            if (cfg.st) cfg._st = document.getElementById(cfg.st);
+        });
+        const btnRestart = document.getElementById('btn-restart');
+
         // Restore last known values from sessionStorage
         function restoreSession() {
             Object.keys(entities).forEach(function (id) {
@@ -988,28 +999,28 @@
                 if (saved === null) return;
                 const cfg = entities[id];
                 if (cfg.el && !cfg.noStore) {
-                    const el = cfg._el = cfg._el || document.getElementById(cfg.el);
+                    const el = cfg._el;
                     if (el) {
                         const val = cfg.fmt ? cfg.fmt(saved) : saved;
                         if (val !== '--' && val !== null) { el.textContent = val; el.classList.remove('skel'); }
                     }
                 }
                 if (cfg.in) {
-                    const input = cfg._in = cfg._in || document.getElementById(cfg.in);
+                    const input = cfg._in;
                     if (input) {
                         var num = parseFloat(saved);
                         if (cfg.pct) num = Math.round(num * 100 / 1023);
                         if (!isNaN(num) && num >= parseFloat(input.min) && num <= parseFloat(input.max)) {
                             input.value = num;
                             if (cfg.sl) {
-                                const slider = cfg._sl = cfg._sl || document.getElementById(cfg.sl);
+                                const slider = cfg._sl;
                                 if (slider) slider.value = num;
                             }
                         }
                     }
                 }
                 if (cfg.sw) {
-                    const sw = cfg._sw = cfg._sw || document.getElementById(cfg.sw);
+                    const sw = cfg._sw;
                     if (sw) sw.checked = (saved === 'ON');
                 }
             });
@@ -1056,8 +1067,8 @@
             const cfg = entities[entityId];
 
             if (cfg.in) {
-                const input = cfg._in = cfg._in || document.getElementById(cfg.in);
-                const slider = cfg.sl ? (cfg._sl = cfg._sl || document.getElementById(cfg.sl)) : null;
+                const input = cfg._in;
+                const slider = cfg._sl;
                 const apiPath = cfg.api;
 
                 if (input && apiPath) {
@@ -1088,7 +1099,7 @@
             }
 
             if (cfg.sw) {
-                const switchEl = cfg._sw = cfg._sw || document.getElementById(cfg.sw);
+                const switchEl = cfg._sw;
                 const apiPath = cfg.api;
 
                 if (switchEl && apiPath) {
@@ -1227,13 +1238,13 @@
             try { sessionStorage.setItem('ms_' + data.id, String(data.state)); } catch (e) {}
 
             if (cfg.el) {
-                const el = cfg._el = cfg._el || document.getElementById(cfg.el);
+                const el = cfg._el;
                 if (el) {
                     const newText = cfg.fmt ? cfg.fmt(data.state) : data.state;
                     el.textContent = newText;
 
                     if (data.id === 'text_sensor-status_message') {
-                        const btn = cfg._btnRestart = cfg._btnRestart || document.getElementById('btn-restart');
+                        const btn = btnRestart;
                         if (btn) {
                             btn.style.display = (data.state === 'DONE') ? 'inline-flex' : 'none';
                         }
@@ -1273,7 +1284,7 @@
             }
 
             if (cfg.in) {
-                const input = cfg._in = cfg._in || document.getElementById(cfg.in);
+                const input = cfg._in;
                 if (input && document.activeElement !== input) {
                     if (data.state !== null && data.state !== '' && data.state !== undefined) {
                         let numericValue = data.state;
@@ -1289,7 +1300,7 @@
                             const displayVal = numVal.toFixed(d);
                             input.value = displayVal;
                             if (cfg.sl) {
-                                const slider = cfg._sl = cfg._sl || document.getElementById(cfg.sl);
+                                const slider = cfg._sl;
                                 if (slider && document.activeElement !== slider) {
                                     slider.value = displayVal;
                                 }
@@ -1300,14 +1311,14 @@
             }
 
             if (cfg.sw) {
-                const el = cfg._sw = cfg._sw || document.getElementById(cfg.sw);
+                const el = cfg._sw;
                 if (el) {
                     el.checked = (data.state === 'ON');
                 }
             }
 
             if (cfg.st) {
-                const el = cfg._st = cfg._st || document.getElementById(cfg.st);
+                const el = cfg._st;
                 if (el) {
                     const activeClass = cfg.cls || 'on';
                     if (data.state === 'ON') {
