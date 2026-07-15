@@ -1,9 +1,15 @@
-const rawUrl = process.env.ESP32_URL || 'https://192.168.22.231';
-const parsed = new URL(rawUrl);
-const USER = parsed.username || process.env.ESP32_USER || 'admin';
-const PASS = parsed.password || process.env.ESP32_PASS || 'moonshine';
-const AUTH = USER ? 'Basic ' + Buffer.from(`${USER}:${PASS}`).toString('base64') : '';
-const BASE = `${parsed.protocol}//${parsed.host}`;
+function getBase(): string {
+  const u = process.env.ESP32_URL || 'https://192.168.22.231';
+  const p = new URL(u);
+  return `${p.protocol}//${p.host}`;
+}
+function getAuth(): string {
+  const u = process.env.ESP32_URL || 'https://192.168.22.231';
+  const p = new URL(u);
+  const user = p.username || process.env.ESP32_USER || '';
+  const pass = p.password || process.env.ESP32_PASS || '';
+  return user ? 'Basic ' + Buffer.from(`${user}:${pass}`).toString('base64') : '';
+}
 
 interface EspEntityJson {
   id: string;
@@ -27,15 +33,15 @@ export function parseState(raw: string): { value: number | null; state: string }
 }
 
 async function doFetch(url: string): Promise<string> {
-  const res = await fetch(`${BASE}${url}`, { headers: { Authorization: AUTH }, signal: AbortSignal.timeout(8000) });
+  const res = await fetch(`${getBase()}${url}`, { headers: { Authorization: getAuth() }, signal: AbortSignal.timeout(8000) });
   if (!res.ok) throw new Error(`HTTP ${res.status} on ${url}`);
   return res.text();
 }
 
 async function doPost(url: string): Promise<void> {
-  const res = await fetch(`${BASE}${url}`, {
+  const res = await fetch(`${getBase()}${url}`, {
     method: 'POST',
-    headers: { Authorization: AUTH },
+    headers: { Authorization: getAuth() },
     signal: AbortSignal.timeout(5000),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status} on POST ${url}`);
