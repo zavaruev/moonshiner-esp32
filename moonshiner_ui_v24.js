@@ -1008,7 +1008,7 @@
                 if (cfg.in) {
                     const input = cfg._in;
                     if (input) {
-                        var num = parseFloat(saved);
+                        let num = parseFloat(saved);
                         if (cfg.pct) num = Math.round(num * 100 / 1023);
                         if (!isNaN(num) && num >= parseFloat(input.min) && num <= parseFloat(input.max)) {
                             input.value = num;
@@ -1028,26 +1028,26 @@
         restoreSession();
 
         // Log ring buffer for diagnostics
-        var logBuffer = [];
-        var MAX_LOG = 20;
-        var logAreaElement = null;
+        let logBuffer = [];
+        const MAX_LOG = 20;
+        let logAreaElement = null;
 
         function addLog(msg) {
             const ts = new Date().toLocaleTimeString();
             logBuffer.push(ts + ' ' + msg);
             if (logBuffer.length > MAX_LOG) logBuffer.shift();
-            var el = logAreaElement || (logAreaElement = document.getElementById('log-area'));
+            let el = logAreaElement || (logAreaElement = document.getElementById('log-area'));
             if (el) {
                 el.innerHTML = logBuffer.map(function (l) { return '<div>' + l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;') + '</div>'; }).join('');
                 el.scrollTop = el.scrollHeight;
             }
         }
         function renderLog() {
-            var el = logAreaElement || (logAreaElement = document.getElementById('log-area'));
+            let el = logAreaElement || (logAreaElement = document.getElementById('log-area'));
             if (el) {
                 el.innerHTML = '';
                 logBuffer.forEach(function (l) {
-                    var div = document.createElement('div');
+                    const div = document.createElement('div');
                     div.textContent = l;
                     el.appendChild(div);
                 });
@@ -1073,7 +1073,7 @@
 
                 if (input && apiPath) {
                     const debouncedUpdate = debounce(async (value) => {
-                        var apiValue = cfg.pct ? Math.round(value * 1023 / 100) : value;
+                        const apiValue = cfg.pct ? Math.round(value * 1023 / 100) : value;
                         input.classList.add('sending');
                         try {
                             await fetch('/' + apiPath + '/set?value=' + apiValue, { method: 'POST' });
@@ -1166,10 +1166,10 @@
         addLog('Diagnostics initialized. Monitoring...');
 
         // Collapsible diagnostics card
-        var diagBody = document.getElementById('diag-body');
-        var diagArrow = document.getElementById('diag-arrow');
+        const diagBody = document.getElementById('diag-body');
+        const diagArrow = document.getElementById('diag-arrow');
         document.getElementById('diag-toggle').addEventListener('click', function () {
-            var hidden = diagBody.style.display === 'none';
+            const hidden = diagBody.style.display === 'none';
             diagBody.style.display = hidden ? '' : 'none';
             diagArrow.textContent = hidden ? '\u25BC' : '\u25B6';
         });
@@ -1196,8 +1196,8 @@
         }
 
         function setConnected(state) {
-            var connEl = document.getElementById('conn-status');
-            var runEl = document.getElementById('val-msg');
+            const connEl = document.getElementById('conn-status');
+            const runEl = document.getElementById('val-msg');
             if (!connEl) return;
             if (state) {
                 connEl.textContent = 'Connected';
@@ -1220,7 +1220,7 @@
                 connEl.style.opacity = '1';
                 if (runEl) runEl.style.opacity = '';
             }
-            var dc = document.getElementById('val-diag-conn');
+            const dc = document.getElementById('val-diag-conn');
             if (dc) dc.innerHTML = state ? 'Connected' : 'Disconnected';
         }
 
@@ -1268,21 +1268,21 @@
                 }
 
                 // Mirror to diagnostics card (runs even if old header element is gone)
-                var _dt = cfg.fmt ? cfg.fmt(data.state) : data.state;
+                const _dt = cfg.fmt ? cfg.fmt(data.state) : data.state;
                 if (data.id === 'text_sensor-reset_reason') {
-                    var _rl = document.getElementById('val-reset-log');
+                    const _rl = document.getElementById('val-reset-log');
                     if (_rl) _rl.textContent = String(data.state);
                 }
                 if (data.id === 'sensor-uptime') {
-                    var _du = document.getElementById('val-diag-uptime');
+                    const _du = document.getElementById('val-diag-uptime');
                     if (_du) _du.textContent = _dt;
                 }
                 if (data.id === 'sensor-wifi_signal') {
-                    var _dw = document.getElementById('val-diag-wifi');
+                    const _dw = document.getElementById('val-diag-wifi');
                     if (_dw) _dw.textContent = _dt;
                 }
                 if (data.id === 'sensor-free_heap') {
-                    var _dh = document.getElementById('val-diag-heap');
+                    const _dh = document.getElementById('val-diag-heap');
                     if (_dh) _dh.textContent = _dt;
                 }
             }
@@ -1340,18 +1340,18 @@
 
         // Click handler for slider markers
         document.addEventListener('click', function (e) {
-            var label = e.target.closest('.ss-label');
+            const label = e.target.closest('.ss-label');
             if (!label) return;
-            var targetId = label.getAttribute('data-target');
-            var value = label.getAttribute('data-value');
+            const targetId = label.getAttribute('data-target');
+            const value = label.getAttribute('data-value');
             if (!targetId || !value) return;
-            var input = document.getElementById(targetId);
+            const input = document.getElementById(targetId);
             if (!input) return;
             input.value = value;
             input.classList.add('sending');
-            var wrap = label.closest('.slider-wrap');
+            const wrap = label.closest('.slider-wrap');
             if (wrap) {
-                var slider = wrap.querySelector('input[type="range"]');
+                const slider = wrap.querySelector('input[type="range"]');
                 if (slider) slider.value = value;
             }
             input.dispatchEvent(new Event('change'));
