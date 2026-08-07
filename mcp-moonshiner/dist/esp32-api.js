@@ -1,10 +1,16 @@
-function getBase() {
-    const u = process.env.ESP32_URL || 'https://192.168.22.231';
+export function getBase() {
+    const u = process.env.ESP32_URL;
+    if (!u) {
+        throw new Error('ESP32_URL environment variable is not set. A secure URL must be provided.');
+    }
     const p = new URL(u);
     return `${p.protocol}//${p.host}`;
 }
-function getAuth() {
-    const u = process.env.ESP32_URL || 'https://192.168.22.231';
+export function getAuth() {
+    const u = process.env.ESP32_URL;
+    if (!u) {
+        throw new Error('ESP32_URL environment variable is not set. A secure URL must be provided.');
+    }
     const p = new URL(u);
     const user = p.username || process.env.ESP32_USER || '';
     const pass = p.password || process.env.ESP32_PASS || '';

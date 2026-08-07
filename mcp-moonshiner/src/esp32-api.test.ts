@@ -91,11 +91,14 @@ describe('parseState', () => {
 });
 
 describe('API error handling (doFetch/doPost)', () => {
+  const originalEnv = process.env.ESP32_URL;
   beforeEach(() => {
+    process.env.ESP32_URL = 'http://test.local';
     vi.stubGlobal('fetch', vi.fn());
   });
 
   afterEach(() => {
+    process.env.ESP32_URL = originalEnv;
     vi.unstubAllGlobals();
   });
 

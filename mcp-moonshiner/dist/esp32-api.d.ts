@@ -1,3 +1,5 @@
+export declare function getBase(): string;
+export declare function getAuth(): string;
 export declare function parseState(raw: string): {
     value: number | null;
     state: string;
