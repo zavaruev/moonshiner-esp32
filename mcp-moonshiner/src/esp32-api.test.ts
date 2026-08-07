@@ -1,5 +1,28 @@
-import { describe, it, expect } from 'vitest';
-import { parseState, readSensor, setNumber, toggleSwitch, pressButton } from './esp32-api';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { parseState, readSensor, setNumber, toggleSwitch, pressButton, getBase, getAuth } from './esp32-api';
+
+describe('URL environment validation', () => {
+  const originalEnv = process.env.ESP32_URL;
+
+  afterEach(() => {
+    process.env.ESP32_URL = originalEnv;
+  });
+
+  it('getBase should throw if ESP32_URL is not set', () => {
+    delete process.env.ESP32_URL;
+    expect(() => getBase()).toThrow('ESP32_URL environment variable is not set. A secure URL must be provided.');
+  });
+
+  it('getAuth should throw if ESP32_URL is not set', () => {
+    delete process.env.ESP32_URL;
+    expect(() => getAuth()).toThrow('ESP32_URL environment variable is not set. A secure URL must be provided.');
+  });
+
+  it('getBase should return host if ESP32_URL is set', () => {
+    process.env.ESP32_URL = 'http://test.local';
+    expect(getBase()).toBe('http://test.local');
+  });
+});
 
 describe('security validation for entity IDs', () => {
   const invalidIds = ['invalid/id', '../id', 'id?param=1', 'my-id-with-dashes', 'id!'];
@@ -91,11 +114,14 @@ describe('parseState', () => {
 });
 
 describe('API error handling (doFetch/doPost)', () => {
+  const originalEnv = process.env.ESP32_URL;
   beforeEach(() => {
+    process.env.ESP32_URL = 'http://test.local';
     vi.stubGlobal('fetch', vi.fn());
   });
 
   afterEach(() => {
+    process.env.ESP32_URL = originalEnv;
     vi.unstubAllGlobals();
   });
 
