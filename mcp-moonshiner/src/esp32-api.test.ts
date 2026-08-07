@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { parseState, readSensor, setNumber, toggleSwitch, pressButton, readBinarySensor } from './esp32-api';
+import { parseState, readSensor, setNumber, toggleSwitch, pressButton } from './esp32-api';
 
 describe('security validation for entity IDs', () => {
   const invalidIds = ['invalid/id', '../id', 'id?param=1', 'my-id-with-dashes', 'id!'];
@@ -87,6 +87,14 @@ describe('parseState', () => {
     const raw = '{123';
     const result = parseState(raw);
     expect(result).toEqual({ value: null, state: '{123' });
+  });
+
+  it('should log a console.error when JSON parse fails on input starting with {', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const raw = '{invalid';
+    parseState(raw);
+    expect(errorSpy).toHaveBeenCalledWith('JSON parse error:', expect.any(Error), 'Raw input:', raw);
+    errorSpy.mockRestore();
   });
 });
 
