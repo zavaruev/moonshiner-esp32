@@ -1239,7 +1239,7 @@
             const cfg = entities[data.id];
 
             // Save to sessionStorage for fast restore on refresh
-            try { sessionStorage.setItem('ms_' + data.id, String(data.state)); } catch (e) {}
+            try { sessionStorage.setItem('ms_' + data.id, String(data.state)); } catch (e) { console.warn('Error saving to sessionStorage: ' + e.message); }
 
             if (cfg.el) {
                 const el = cfg._el;
