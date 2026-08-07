@@ -1038,7 +1038,14 @@
             if (logBuffer.length > MAX_LOG) logBuffer.shift();
             var el = logAreaElement || (logAreaElement = document.getElementById('log-area'));
             if (el) {
-                el.innerHTML = logBuffer.map(function (l) { return '<div>' + l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;') + '</div>'; }).join('');
+                el.innerHTML = '';
+                var fragment = document.createDocumentFragment();
+                logBuffer.forEach(function (l) {
+                    var div = document.createElement('div');
+                    div.textContent = l;
+                    fragment.appendChild(div);
+                });
+                el.appendChild(fragment);
                 el.scrollTop = el.scrollHeight;
             }
         }
