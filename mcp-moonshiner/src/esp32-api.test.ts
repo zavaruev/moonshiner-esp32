@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { parseState, readSensor, setNumber, toggleSwitch, pressButton } from './esp32-api';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { parseState, readSensor, readTextSensor, setNumber, toggleSwitch, pressButton } from './esp32-api';
 
 describe('security validation for entity IDs', () => {
   const invalidIds = ['invalid/id', '../id', 'id?param=1', 'my-id-with-dashes', 'id!'];
@@ -7,6 +7,10 @@ describe('security validation for entity IDs', () => {
   invalidIds.forEach(id => {
     it(`should throw on invalid ID in readSensor: ${id}`, async () => {
       await expect(readSensor(id)).rejects.toThrow(`Invalid entity ID`);
+    });
+
+    it(`should throw on invalid ID in readTextSensor: ${id}`, async () => {
+      await expect(readTextSensor(id)).rejects.toThrow(`Invalid entity ID`);
     });
 
     it(`should throw on invalid ID in setNumber: ${id}`, () => {
@@ -135,5 +139,47 @@ describe('API error handling (doFetch/doPost)', () => {
     mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
     await expect(readSensor('test_sensor')).rejects.toThrow('Network error');
+  });
+});
+
+describe('readTextSensor', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('should return plain text string and call correct endpoint', async () => {
+    const { readTextSensor } = await import('./esp32-api');
+    const mockFetch = vi.mocked(fetch);
+
+    // Mock successful plain text response
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: async () => 'Initializing...'
+    } as any);
+
+    const result = await readTextSensor('status_message');
+
+    expect(result).toBe('Initializing...');
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/text_sensor/status_message'),
+      expect.any(Object)
+    );
+  });
+
+  it('should propagate errors when fetch fails', async () => {
+    const { readTextSensor } = await import('./esp32-api');
+    const mockFetch = vi.mocked(fetch);
+
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found'
+    } as any);
+
+    await expect(readTextSensor('status_message')).rejects.toThrow('HTTP 404 on /text_sensor/status_message');
   });
 });
