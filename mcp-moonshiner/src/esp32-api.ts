@@ -24,7 +24,7 @@ export function parseState(raw: string): { value: number | null; state: string }
       const j: EspEntityJson = JSON.parse(raw);
       return { value: j.value ?? null, state: j.state };
     } catch (e) {
-      console.error('JSON parse error:', e, 'Raw input:', raw);
+      // Ignore JSON parse errors and fallback to plain text
     }
   }
   // fallback: plain text

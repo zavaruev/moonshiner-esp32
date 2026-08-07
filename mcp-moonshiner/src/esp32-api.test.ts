@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { parseState, readSensor, setNumber, toggleSwitch, pressButton } from './esp32-api';
 
 describe('security validation for entity IDs', () => {
