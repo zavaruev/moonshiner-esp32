@@ -781,21 +781,20 @@ display:
     address: 0x3C
     update_interval: 1s
     lambda: |-
+      unsigned long now = esphome::millis();
       // Reentry guard: skip if previous draw is still stuck on I2C
       if (id(display_busy)) {
-        if (esphome::millis() - id(display_busy_since) > 3000) {
+        if (now - id(display_busy_since) > 3000) {
           char _d[64];
           snprintf(_d, sizeof(_d), "Display stuck >3s, skipped draw");
           id(diag_msg).publish_state(_d);
           ESP_LOGE("display", "Display stuck for >3s, skipping draw");
         }
-        id(display_busy_since) = esphome::millis();
+        id(display_busy_since) = now;
         return;
       }
       id(display_busy) = true;
-      id(display_busy_since) = esphome::millis();
-
-      unsigned long _disp_start = esphome::millis();
+      id(display_busy_since) = now;
 
       // Clear display buffer first to prevent artifacts
       it.fill(COLOR_OFF);
@@ -807,7 +806,7 @@ display:
       it.printf(0, 0, id(roboto), "Up: %02d:%02d", hours, minutes);
 
       // Heartbeat - Top right (blinks every second)
-      if ((esphome::millis() / 1000) % 2 == 0) {
+      if ((now / 1000) % 2 == 0) {
         it.filled_circle(120, 8, 4);
       }
 
@@ -824,7 +823,7 @@ display:
       }
 
       // Timing diagnostics
-      unsigned long _disp_dur = esphome::millis() - _disp_start;
+      unsigned long _disp_dur = esphome::millis() - now;
       if (_disp_dur > 500) {
         char _d[64];
         snprintf(_d, sizeof(_d), "Display took %lums!", _disp_dur);
@@ -832,7 +831,8 @@ display:
         ESP_LOGW("display", "Slow display: %lums", _disp_dur);
       } else {
         static unsigned long _last_diag_log = 0;
-        if (esphome::millis() - _last_diag_log > 30000) {
+        unsigned long diag_now = esphome::millis();
+        if (diag_now - _last_diag_log > 30000) {
           char _d[64];
           float _lt = id(loop_time_sensor).state;
           if (std::isnan(_lt))
@@ -840,7 +840,7 @@ display:
           else
             snprintf(_d, sizeof(_d), "Display: %lums, Loop: %.0fms", _disp_dur, _lt);
           id(diag_msg).publish_state(_d);
-          _last_diag_log = esphome::millis();
+          _last_diag_log = diag_now;
         }
       }
 
