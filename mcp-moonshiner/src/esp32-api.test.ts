@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { parseState, readSensor, setNumber, toggleSwitch, pressButton } from './esp32-api';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { parseState, readSensor, setNumber, toggleSwitch, pressButton, readBinarySensor } from './esp32-api';
 
 describe('security validation for entity IDs', () => {
   const invalidIds = ['invalid/id', '../id', 'id?param=1', 'my-id-with-dashes', 'id!'];
@@ -135,5 +135,65 @@ describe('API error handling (doFetch/doPost)', () => {
     mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
     await expect(readSensor('test_sensor')).rejects.toThrow('Network error');
+  });
+});
+
+describe('readBinarySensor', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('should return true when sensor state is ON', async () => {
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve('ON')
+    } as any);
+
+    const result = await readBinarySensor('my_sensor');
+    expect(result).toBe(true);
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/binary_sensor/my_sensor'), expect.any(Object));
+  });
+
+  it('should return false when sensor state is OFF', async () => {
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve('OFF')
+    } as any);
+
+    const result = await readBinarySensor('my_sensor');
+    expect(result).toBe(false);
+  });
+
+
+  it('should return false when sensor state is unknown', async () => {
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve('unknown')
+    } as any);
+
+    const result = await readBinarySensor('my_sensor');
+    expect(result).toBe(false);
+  });
+
+  it('should throw an error when fetch fails', async () => {
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: 'Server Error'
+    } as any);
+
+    await expect(readBinarySensor('my_sensor')).rejects.toThrow('HTTP 500 on /binary_sensor/my_sensor');
+  });
+
+  it('should throw on invalid entity ID', async () => {
+    await expect(readBinarySensor('invalid/id')).rejects.toThrow('Invalid entity ID: invalid/id');
   });
 });
