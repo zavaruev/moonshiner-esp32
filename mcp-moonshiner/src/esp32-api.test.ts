@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { parseState, readSensor, readTextSensor, setNumber, toggleSwitch, pressButton } from './esp32-api';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { parseState, readSensor, setNumber, toggleSwitch, pressButton, readBinarySensor } from './esp32-api';
 
 describe('security validation for entity IDs', () => {
   const invalidIds = ['invalid/id', '../id', 'id?param=1', 'my-id-with-dashes', 'id!'];
@@ -95,11 +95,14 @@ describe('parseState', () => {
 });
 
 describe('API error handling (doFetch/doPost)', () => {
+  const originalEnv = process.env.ESP32_URL;
   beforeEach(() => {
+    process.env.ESP32_URL = 'http://test.local';
     vi.stubGlobal('fetch', vi.fn());
   });
 
   afterEach(() => {
+    process.env.ESP32_URL = originalEnv;
     vi.unstubAllGlobals();
   });
 
@@ -142,7 +145,7 @@ describe('API error handling (doFetch/doPost)', () => {
   });
 });
 
-describe('readTextSensor', () => {
+describe('readBinarySensor', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn());
   });
@@ -151,35 +154,53 @@ describe('readTextSensor', () => {
     vi.unstubAllGlobals();
   });
 
-  it('should return plain text string and call correct endpoint', async () => {
-    const { readTextSensor } = await import('./esp32-api');
+  it('should return true when sensor state is ON', async () => {
     const mockFetch = vi.mocked(fetch);
-
-    // Mock successful plain text response
     mockFetch.mockResolvedValueOnce({
       ok: true,
-      text: async () => 'Initializing...'
+      text: () => Promise.resolve('ON')
     } as any);
 
-    const result = await readTextSensor('status_message');
-
-    expect(result).toBe('Initializing...');
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/text_sensor/status_message'),
-      expect.any(Object)
-    );
+    const result = await readBinarySensor('my_sensor');
+    expect(result).toBe(true);
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/binary_sensor/my_sensor'), expect.any(Object));
   });
 
-  it('should propagate errors when fetch fails', async () => {
-    const { readTextSensor } = await import('./esp32-api');
+  it('should return false when sensor state is OFF', async () => {
     const mockFetch = vi.mocked(fetch);
-
     mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 404,
-      statusText: 'Not Found'
+      ok: true,
+      text: () => Promise.resolve('OFF')
     } as any);
 
-    await expect(readTextSensor('status_message')).rejects.toThrow('HTTP 404 on /text_sensor/status_message');
+    const result = await readBinarySensor('my_sensor');
+    expect(result).toBe(false);
+  });
+
+
+  it('should return false when sensor state is unknown', async () => {
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve('unknown')
+    } as any);
+
+    const result = await readBinarySensor('my_sensor');
+    expect(result).toBe(false);
+  });
+
+  it('should throw an error when fetch fails', async () => {
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: 'Server Error'
+    } as any);
+
+    await expect(readBinarySensor('my_sensor')).rejects.toThrow('HTTP 500 on /binary_sensor/my_sensor');
+  });
+
+  it('should throw on invalid entity ID', async () => {
+    await expect(readBinarySensor('invalid/id')).rejects.toThrow('Invalid entity ID: invalid/id');
   });
 });
