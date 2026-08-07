@@ -1034,18 +1034,27 @@
 
         function addLog(msg) {
             const ts = new Date().toLocaleTimeString();
-            logBuffer.push(ts + ' ' + msg);
+            const logStr = ts + ' ' + msg;
+            logBuffer.push(logStr);
             if (logBuffer.length > MAX_LOG) logBuffer.shift();
             var el = logAreaElement || (logAreaElement = document.getElementById('log-area'));
             if (el) {
-                el.innerHTML = '';
-                var fragment = document.createDocumentFragment();
-                logBuffer.forEach(function (l) {
+                if (el.children.length === 0 && logBuffer.length > 1) {
+                    // First time discovering the element, render everything in the buffer
+                    for (var i = 0; i < logBuffer.length; i++) {
+                        var bDiv = document.createElement('div');
+                        bDiv.textContent = logBuffer[i];
+                        el.appendChild(bDiv);
+                    }
+                } else {
                     var div = document.createElement('div');
-                    div.textContent = l;
-                    fragment.appendChild(div);
-                });
-                el.appendChild(fragment);
+                    div.textContent = logStr;
+                    el.appendChild(div);
+                }
+
+                while (el.children.length > MAX_LOG) {
+                    el.removeChild(el.firstChild);
+                }
                 el.scrollTop = el.scrollHeight;
             }
         }
@@ -1246,7 +1255,7 @@
             const cfg = entities[data.id];
 
             // Save to sessionStorage for fast restore on refresh
-            try { sessionStorage.setItem('ms_' + data.id, String(data.state)); } catch (e) {}
+            try { sessionStorage.setItem('ms_' + data.id, String(data.state)); } catch (e) { console.warn('Error saving to sessionStorage: ' + e.message); }
 
             if (cfg.el) {
                 const el = cfg._el;
