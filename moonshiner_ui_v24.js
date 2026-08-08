@@ -702,217 +702,348 @@
         const app = document.createElement('div');
         app.id = 'custom-app';
 
-        app.innerHTML = `
-            <div class="card">
-                <div class="top-bar">
-                    <div class="top-bar-left">
-                        <div class="badge-row">
-                            <span id="conn-status" class="badge badge-conn disconnected">Connecting...</span>
-                            <span class="badge badge-status" id="val-msg">Connecting...</span>
-                            <span id="st-distilling" class="badge">Distilling</span>
-                            <span id="st-heating" class="badge">Heating</span>
-                            <span id="st-alarm" class="badge">Alarm</span>
-                        </div>
-                        <button class="btn btn-danger" id="btn-restart" style="display:none;padding:4px 12px;font-size:11px;">Restart</button>
-                    </div>
-                    <div class="top-bar-right">
-                        <div class="vol-mini">
-                            <span class="vol-icon" id="vol-icon">&#9835;</span>
-                            <input type="range" id="in-vol-slider" min="0" max="100" step="1" value="100">
-                            <span class="vol-val" id="vol-val">100</span>
-                            <input type="number" id="in-vol" value="100" style="display:none;">
-                        </div>
-                        <button class="theme-toggle" id="btn-theme" aria-label="Toggle theme">
-                            <span class="icon">&#9790;</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
 
-            <div class="card" style="padding:16px">
-                <div class="card-header" style="margin-bottom:12px">
-                    <h2 class="card-title">Temperatures</h2>
-                </div>
-                <div class="sensor-grid">
-                    <div class="sensor-item" id="col-temp-card">
-                        <div class="label">Column</div>
-                        <div class="value"><span id="val-col-temp" class="skel">--</span></div>
-                        <svg class="temp-ring" viewBox="0 0 34 34" id="col-temp-ring">
-                            <circle cx="17" cy="17" r="14" fill="none" stroke="var(--divider)" stroke-width="2.5"/>
-                            <circle cx="17" cy="17" r="14" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-dasharray="88" stroke-dashoffset="88" transform="rotate(-90 17 17)" id="col-temp-arc"/>
-                        </svg>
-                    </div>
-                    <div class="sensor-item" id="tank-temp-card">
-                        <div class="label">Tank</div>
-                        <div class="value"><span id="val-tank-temp" class="skel">--</span></div>
-                        <svg class="temp-ring" viewBox="0 0 34 34" id="tank-temp-ring">
-                            <circle cx="17" cy="17" r="14" fill="none" stroke="var(--divider)" stroke-width="2.5"/>
-                            <circle cx="17" cy="17" r="14" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-dasharray="88" stroke-dashoffset="88" transform="rotate(-90 17 17)" id="tank-temp-arc"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svgTags = new Set(['svg', 'circle', 'path', 'rect', 'g']);
 
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="card-title">Column Control</h2>
-                </div>
+        function h(tag, attrs, children) {
+            const el = svgTags.has(tag) ? document.createElementNS(svgNS, tag) : document.createElement(tag);
+            if (attrs) {
+                for (const key in attrs) {
+                    if (key === 'className') {
+                        if (svgTags.has(tag)) el.setAttribute('class', attrs[key]);
+                        else el.className = attrs[key];
+                    }
+                    else if (key === 'htmlFor') el.htmlFor = attrs[key];
+                    else if (key === 'style') el.style.cssText = attrs[key];
+                    else el.setAttribute(key, attrs[key]);
+                }
+            }
+            if (children) {
+                for (let i = 0; i < children.length; i++) {
+                    const c = children[i];
+                    if (typeof c === 'string') el.appendChild(document.createTextNode(c));
+                    else if (c) el.appendChild(c);
+                }
+            }
+            return el;
+        }
 
-                <div class="control-group">
-                    <div class="control-item full">
-                        <label>Target Temperature</label>
-                        <div class="input-row">
-                            <button class="btn btn-stepper" data-stepper="in-target" data-step="-0.1">&minus;</button>
-                            <input type="number" id="in-target" step="0.01" min="0" max="100" value="95.00">
-                            <div class="slider-wrap">
-                                <input type="range" id="in-target-slider" min="0" max="100" step="0.01" value="95.00">
-                                <div class="ss-marker" style="left:78.39%"></div>
-                                <div class="ss-label" style="left:78.39%" data-target="in-target" data-value="78.39">Spirit</div>
-                            </div>
-                            <button class="btn btn-stepper" data-stepper="in-target" data-step="0.1">&plus;</button>
-                            <div class="delta-inline">
-                                <span class="delta-label">Δ</span>
-                                <input type="number" id="in-delta" step="0.01" min="0" max="5" value="0.30">
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        const children = [
+        h('div', {"className":"card"}, [
+            h('div', {"className":"top-bar"}, [
+                h('div', {"className":"top-bar-left"}, [
+                    h('div', {"className":"badge-row"}, [
+                        h('span', {"id":"conn-status","className":"badge badge-conn disconnected"}, [
+                            "Connecting..."
+                        ]),
+                        h('span', {"className":"badge badge-status","id":"val-msg"}, [
+                            "Connecting..."
+                        ]),
+                        h('span', {"id":"st-distilling","className":"badge"}, [
+                            "Distilling"
+                        ]),
+                        h('span', {"id":"st-heating","className":"badge"}, [
+                            "Heating"
+                        ]),
+                        h('span', {"id":"st-alarm","className":"badge"}, [
+                            "Alarm"
+                        ])
+                    ]),
+                    h('button', {"className":"btn btn-danger","id":"btn-restart","style":"display:none;padding:4px 12px;font-size:11px;"}, [
+                        "Restart"
+                    ])
+                ]),
+                h('div', {"className":"top-bar-right"}, [
+                    h('div', {"className":"vol-mini"}, [
+                        h('span', {"className":"vol-icon","id":"vol-icon"}, [
+                            "♫"
+                        ]),
+                        h('input', {"type":"range","id":"in-vol-slider","min":"0","max":"100","step":"1","value":"100"}),
+                        h('span', {"className":"vol-val","id":"vol-val"}, [
+                            "100"
+                        ]),
+                        h('input', {"type":"number","id":"in-vol","value":"100","style":"display:none;"})
+                    ]),
+                    h('button', {"className":"theme-toggle","id":"btn-theme","aria-label":"Toggle theme"}, [
+                        h('span', {"className":"icon"}, [
+                            "☾"
+                        ])
+                    ])
+                ])
+            ])
+        ]),
+        h('div', {"className":"card","style":"padding:16px"}, [
+            h('div', {"className":"card-header","style":"margin-bottom:12px"}, [
+                h('h2', {"className":"card-title"}, [
+                    "Temperatures"
+                ])
+            ]),
+            h('div', {"className":"sensor-grid"}, [
+                h('div', {"className":"sensor-item","id":"col-temp-card"}, [
+                    h('div', {"className":"label"}, [
+                        "Column"
+                    ]),
+                    h('div', {"className":"value"}, [
+                        h('span', {"id":"val-col-temp","className":"skel"}, [
+                            "--"
+                        ])
+                    ]),
+                    h('svg', {"className":"temp-ring","viewBox":"0 0 34 34","id":"col-temp-ring"}, [
+                        h('circle', {"cx":"17","cy":"17","r":"14","fill":"none","stroke":"var(--divider)","stroke-width":"2.5"}),
+                        h('circle', {"cx":"17","cy":"17","r":"14","fill":"none","stroke":"var(--primary)","stroke-width":"2.5","stroke-dasharray":"88","stroke-dashoffset":"88","transform":"rotate(-90 17 17)","id":"col-temp-arc"})
+                    ])
+                ]),
+                h('div', {"className":"sensor-item","id":"tank-temp-card"}, [
+                    h('div', {"className":"label"}, [
+                        "Tank"
+                    ]),
+                    h('div', {"className":"value"}, [
+                        h('span', {"id":"val-tank-temp","className":"skel"}, [
+                            "--"
+                        ])
+                    ]),
+                    h('svg', {"className":"temp-ring","viewBox":"0 0 34 34","id":"tank-temp-ring"}, [
+                        h('circle', {"cx":"17","cy":"17","r":"14","fill":"none","stroke":"var(--divider)","stroke-width":"2.5"}),
+                        h('circle', {"cx":"17","cy":"17","r":"14","fill":"none","stroke":"var(--primary)","stroke-width":"2.5","stroke-dasharray":"88","stroke-dashoffset":"88","transform":"rotate(-90 17 17)","id":"tank-temp-arc"})
+                    ])
+                ])
+            ])
+        ]),
+        h('div', {"className":"card"}, [
+            h('div', {"className":"card-header"}, [
+                h('h2', {"className":"card-title"}, [
+                    "Column Control"
+                ])
+            ]),
+            h('div', {"className":"control-group"}, [
+                h('div', {"className":"control-item full"}, [
+                    h('label', null, [
+                        "Target Temperature"
+                    ]),
+                    h('div', {"className":"input-row"}, [
+                        h('button', {"className":"btn btn-stepper","data-stepper":"in-target","data-step":"-0.1"}, [
+                            "−"
+                        ]),
+                        h('input', {"type":"number","id":"in-target","step":"0.01","min":"0","max":"100","value":"95.00"}),
+                        h('div', {"className":"slider-wrap"}, [
+                            h('input', {"type":"range","id":"in-target-slider","min":"0","max":"100","step":"0.01","value":"95.00"}),
+                            h('div', {"className":"ss-marker","style":"left:78.39%"}),
+                            h('div', {"className":"ss-label","style":"left:78.39%","data-target":"in-target","data-value":"78.39"}, [
+                                "Spirit"
+                            ])
+                        ]),
+                        h('button', {"className":"btn btn-stepper","data-stepper":"in-target","data-step":"0.1"}, [
+                            "+"
+                        ]),
+                        h('div', {"className":"delta-inline"}, [
+                            h('span', {"className":"delta-label"}, [
+                                "Δ"
+                            ]),
+                            h('input', {"type":"number","id":"in-delta","step":"0.01","min":"0","max":"5","value":"0.30"})
+                        ])
+                    ])
+                ])
+            ]),
+            h('div', {"className":"control-item full","style":"margin-top:12px;"}, [
+                h('label', null, [
+                    "Coef Otbora"
+                ]),
+                h('div', {"className":"input-row"}, [
+                    h('input', {"type":"number","id":"in-coef","step":"0.05","min":"0","max":"1","value":"1.0"}),
+                    h('input', {"type":"range","id":"in-coef-slider","min":"0","max":"1","step":"0.05","value":"1.0"})
+                ])
+            ]),
+            h('div', {"style":"margin-top:8px;"}, [
+                h('div', {"className":"switch-row","style":"padding:4px 0"}, [
+                    h('label', {"htmlFor":"sw-reduction"}, [
+                        "Use Reduction"
+                    ]),
+                    h('label', {"className":"switch"}, [
+                        h('input', {"type":"checkbox","id":"sw-reduction","checked":""}),
+                        h('span', {"className":"track"})
+                    ])
+                ])
+            ])
+        ]),
+        h('div', {"className":"card"}, [
+            h('div', {"className":"card-header"}, [
+                h('h2', {"className":"card-title"}, [
+                    "Valves & Heater"
+                ])
+            ]),
+            h('div', {"className":"control-group"}, [
+                h('div', {"className":"control-item"}, [
+                    h('label', null, [
+                        "Valve High"
+                    ]),
+                    h('div', {"className":"input-row"}, [
+                        h('div', {"className":"number-wrap"}, [
+                            h('input', {"type":"number","id":"in-vh","className":"has-unit","step":"1","min":"0","max":"100","value":"0"}),
+                            h('span', {"className":"number-unit"}, [
+                                "%"
+                            ])
+                        ]),
+                        h('div', {"className":"slider-wrap"}, [
+                            h('input', {"type":"range","id":"in-vh-slider","min":"0","max":"100","step":"1","value":"0"}),
+                            h('div', {"className":"ss-marker","style":"left:2%"}),
+                            h('div', {"className":"ss-label","style":"left:2%","data-target":"in-vh","data-value":"2"}, [
+                                "Heads"
+                            ]),
+                            h('div', {"className":"ss-marker","style":"left:21.5%"}),
+                            h('div', {"className":"ss-label","style":"left:21.5%","data-target":"in-vh","data-value":"22"}, [
+                                "Hearts"
+                            ])
+                        ])
+                    ])
+                ]),
+                h('div', {"className":"control-item"}, [
+                    h('label', null, [
+                        "Valve Low"
+                    ]),
+                    h('div', {"className":"input-row"}, [
+                        h('div', {"className":"number-wrap"}, [
+                            h('input', {"type":"number","id":"in-vl","className":"has-unit","step":"1","min":"0","max":"100","value":"0"}),
+                            h('span', {"className":"number-unit"}, [
+                                "%"
+                            ])
+                        ]),
+                        h('div', {"className":"slider-wrap"}, [
+                            h('input', {"type":"range","id":"in-vl-slider","min":"0","max":"100","step":"1","value":"0"}),
+                            h('div', {"className":"ss-marker","style":"left:21.5%"}),
+                            h('div', {"className":"ss-label","style":"left:21.5%","data-target":"in-vl","data-value":"22"}, [
+                                "Hearts"
+                            ])
+                        ])
+                    ])
+                ]),
+                h('div', {"className":"control-item full"}, [
+                    h('label', null, [
+                        "Heater Power"
+                    ]),
+                    h('div', {"className":"input-row"}, [
+                        h('div', {"className":"number-wrap"}, [
+                            h('input', {"type":"number","id":"in-heat","className":"has-unit","step":"10","min":"0","max":"2750","value":"0"}),
+                            h('span', {"className":"number-unit"}, [
+                                "W"
+                            ])
+                        ]),
+                        h('div', {"className":"slider-wrap"}, [
+                            h('input', {"type":"range","id":"in-heat-slider","min":"0","max":"2750","step":"10","value":"0"}),
+                            h('div', {"className":"ss-marker","style":"left:57.3%"}),
+                            h('div', {"className":"ss-label","style":"left:57.3%","data-target":"in-heat","data-value":"1575"}, [
+                                "Working Power"
+                            ]),
+                            h('div', {"className":"ss-marker","style":"left:100%"}),
+                            h('div', {"className":"ss-label","style":"left:100%;transform:translateX(-100%)","data-target":"in-heat","data-value":"2750"}, [
+                                "Preheat"
+                            ])
+                        ])
+                    ])
+                ]),
+                h('div', {"className":"control-item full"}, [
+                    h('label', null, [
+                        "Max Tank Temp"
+                    ]),
+                    h('div', {"className":"input-row"}, [
+                        h('div', {"className":"number-wrap"}, [
+                            h('input', {"type":"number","id":"in-max-tank","className":"has-unit","step":"0.1","min":"0","max":"100","value":"99.0"}),
+                            h('span', {"className":"number-unit"}, [
+                                "°C"
+                            ])
+                        ]),
+                        h('input', {"type":"range","id":"in-max-tank-slider","min":"0","max":"100","step":"0.1","value":"99.0"})
+                    ])
+                ])
+            ]),
+            h('div', {"style":"margin-top:8px;"}, [
+                h('div', {"className":"switch-row","style":"padding:4px 0"}, [
+                    h('label', {"htmlFor":"sw-disable-close"}, [
+                        "Disable Upper Valve Closing"
+                    ]),
+                    h('label', {"className":"switch"}, [
+                        h('input', {"type":"checkbox","id":"sw-disable-close"}),
+                        h('span', {"className":"track"})
+                    ])
+                ])
+            ])
+        ]),
+        h('div', {"className":"card","id":"diag-card","style":"position:relative;"}, [
+            h('div', {"className":"card-header","style":"margin-bottom:8px;cursor:pointer;","id":"diag-toggle"}, [
+                h('h2', {"className":"card-title","style":"font-size:16px;"}, [
+                    "⚙ Diagnostics"
+                ]),
+                h('span', {"id":"diag-arrow","style":"color:var(--ink-muted);font-size:14px;"}, [
+                    "▸"
+                ])
+            ]),
+            h('div', {"id":"diag-body","style":"display:none"}, [
+                h('div', {"className":"sensor-grid","style":"grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;"}, [
+                    h('div', {"className":"sensor-item","style":"padding:8px;"}, [
+                        h('div', {"className":"label"}, [
+                            "Connection"
+                        ]),
+                        h('div', {"className":"value","style":"font-size:16px;","id":"val-diag-conn"}, [
+                            "--"
+                        ])
+                    ]),
+                    h('div', {"className":"sensor-item","style":"padding:8px;"}, [
+                        h('div', {"className":"label"}, [
+                            "Uptime"
+                        ]),
+                        h('div', {"className":"value","style":"font-size:16px;","id":"val-diag-uptime"}, [
+                            "--"
+                        ])
+                    ]),
+                    h('div', {"className":"sensor-item","style":"padding:8px;"}, [
+                        h('div', {"className":"label"}, [
+                            "WiFi Signal"
+                        ]),
+                        h('div', {"className":"value","style":"font-size:16px;","id":"val-diag-wifi"}, [
+                            "--"
+                        ])
+                    ]),
+                    h('div', {"className":"sensor-item","style":"padding:8px;"}, [
+                        h('div', {"className":"label"}, [
+                            "Free Heap"
+                        ]),
+                        h('div', {"className":"value","style":"font-size:16px;","id":"val-diag-heap"}, [
+                            "--"
+                        ])
+                    ]),
+                    h('div', {"className":"sensor-item","style":"padding:8px;"}, [
+                        h('div', {"className":"label"}, [
+                            "Loop Time"
+                        ]),
+                        h('div', {"className":"value","style":"font-size:16px;","id":"val-loop-time"}, [
+                            "--"
+                        ])
+                    ]),
+                    h('div', {"className":"sensor-item","style":"padding:8px;"}, [
+                        h('div', {"className":"label"}, [
+                            "Display"
+                        ]),
+                        h('div', {"className":"value","style":"font-size:16px;","id":"val-diag"}, [
+                            "--"
+                        ])
+                    ]),
+                    h('div', {"className":"sensor-item","style":"padding:8px;grid-column:1/-1;"}, [
+                        h('div', {"className":"label"}, [
+                            "Reset Reason"
+                        ]),
+                        h('div', {"className":"value","style":"font-size:14px;","id":"val-reset-log"}, [
+                            "--"
+                        ])
+                    ])
+                ]),
+                h('div', {"id":"log-area","style":"background:var(--input-bg);border-radius:var(--radius-sm);padding:8px;font-family:'Menlo','Monaco','Consolas',monospace;font-size:11px;line-height:1.6;color:var(--ink);max-height:200px;overflow-y:auto;border:1px solid var(--card-border);white-space:pre-wrap;"})
+            ])
+        ])
+        ];
+        for (let i = 0; i < children.length; i++) {
+            app.appendChild(children[i]);
+        }
 
-                <div class="control-item full" style="margin-top:12px;">
-                    <label>Coef Otbora</label>
-                    <div class="input-row">
-                        <input type="number" id="in-coef" step="0.05" min="0" max="1" value="1.0">
-                        <input type="range" id="in-coef-slider" min="0" max="1" step="0.05" value="1.0">
-                    </div>
-                </div>
-
-                <div style="margin-top:8px;">
-                    <div class="switch-row" style="padding:4px 0">
-                        <label for="sw-reduction">Use Reduction</label>
-                        <label class="switch">
-                            <input type="checkbox" id="sw-reduction" checked>
-                            <span class="track"></span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="card-title">Valves & Heater</h2>
-                </div>
-
-                <div class="control-group">
-                    <div class="control-item">
-                        <label>Valve High</label>
-                        <div class="input-row">
-                            <div class="number-wrap">
-                                <input type="number" id="in-vh" class="has-unit" step="1" min="0" max="100" value="0">
-                                <span class="number-unit">%</span>
-                            </div>
-                            <div class="slider-wrap">
-                                <input type="range" id="in-vh-slider" min="0" max="100" step="1" value="0">
-                                <div class="ss-marker" style="left:2%"></div>
-                                <div class="ss-label" style="left:2%" data-target="in-vh" data-value="2">Heads</div>
-                                <div class="ss-marker" style="left:21.5%"></div>
-                                <div class="ss-label" style="left:21.5%" data-target="in-vh" data-value="22">Hearts</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="control-item">
-                        <label>Valve Low</label>
-                        <div class="input-row">
-                            <div class="number-wrap">
-                                <input type="number" id="in-vl" class="has-unit" step="1" min="0" max="100" value="0">
-                                <span class="number-unit">%</span>
-                            </div>
-                            <div class="slider-wrap">
-                                <input type="range" id="in-vl-slider" min="0" max="100" step="1" value="0">
-                                <div class="ss-marker" style="left:21.5%"></div>
-                                <div class="ss-label" style="left:21.5%" data-target="in-vl" data-value="22">Hearts</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="control-item full">
-                        <label>Heater Power</label>
-                        <div class="input-row">
-                            <div class="number-wrap">
-                                <input type="number" id="in-heat" class="has-unit" step="10" min="0" max="2750" value="0">
-                                <span class="number-unit">W</span>
-                            </div>
-                            <div class="slider-wrap">
-                                <input type="range" id="in-heat-slider" min="0" max="2750" step="10" value="0">
-                                <div class="ss-marker" style="left:57.3%"></div>
-                                <div class="ss-label" style="left:57.3%" data-target="in-heat" data-value="1575">Working Power</div>
-                                <div class="ss-marker" style="left:100%"></div>
-                                <div class="ss-label" style="left:100%;transform:translateX(-100%)" data-target="in-heat" data-value="2750">Preheat</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="control-item full">
-                        <label>Max Tank Temp</label>
-                        <div class="input-row">
-                            <div class="number-wrap">
-                                <input type="number" id="in-max-tank" class="has-unit" step="0.1" min="0" max="100" value="99.0">
-                                <span class="number-unit">°C</span>
-                            </div>
-                            <input type="range" id="in-max-tank-slider" min="0" max="100" step="0.1" value="99.0">
-                        </div>
-                    </div>
-                </div>
-
-                <div style="margin-top:8px;">
-                    <div class="switch-row" style="padding:4px 0">
-                        <label for="sw-disable-close">Disable Upper Valve Closing</label>
-                        <label class="switch">
-                            <input type="checkbox" id="sw-disable-close">
-                            <span class="track"></span>
-                        </label>
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="card" id="diag-card" style="position:relative;">
-                <div class="card-header" style="margin-bottom:8px;cursor:pointer;" id="diag-toggle">
-                    <h2 class="card-title" style="font-size:16px;">&#9881; Diagnostics</h2>
-                    <span id="diag-arrow" style="color:var(--ink-muted);font-size:14px;">&#9656;</span>
-                </div>
-                <div id="diag-body" style="display:none">
-                    <div class="sensor-grid" style="grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
-                        <div class="sensor-item" style="padding:8px;">
-                            <div class="label">Connection</div>
-                            <div class="value" style="font-size:16px;" id="val-diag-conn">--</div>
-                        </div>
-                        <div class="sensor-item" style="padding:8px;">
-                            <div class="label">Uptime</div>
-                            <div class="value" style="font-size:16px;" id="val-diag-uptime">--</div>
-                        </div>
-                        <div class="sensor-item" style="padding:8px;">
-                            <div class="label">WiFi Signal</div>
-                            <div class="value" style="font-size:16px;" id="val-diag-wifi">--</div>
-                        </div>
-                        <div class="sensor-item" style="padding:8px;">
-                            <div class="label">Free Heap</div>
-                            <div class="value" style="font-size:16px;" id="val-diag-heap">--</div>
-                        </div>
-                        <div class="sensor-item" style="padding:8px;">
-                            <div class="label">Loop Time</div>
-                            <div class="value" style="font-size:16px;" id="val-loop-time" class="skel">--</div>
-                        </div>
-                        <div class="sensor-item" style="padding:8px;">
-                            <div class="label">Display</div>
-                            <div class="value" style="font-size:16px;" id="val-diag" class="skel">--</div>
-                        </div>
-                        <div class="sensor-item" style="padding:8px;grid-column:1/-1;">
-                            <div class="label">Reset Reason</div>
-                            <div class="value" style="font-size:14px;" id="val-reset-log">--</div>
-                        </div>
-                    </div>
-                    <div id="log-area" style="background:var(--input-bg);border-radius:var(--radius-sm);padding:8px;font-family:'Menlo','Monaco','Consolas',monospace;font-size:11px;line-height:1.6;color:var(--ink);max-height:200px;overflow-y:auto;border:1px solid var(--card-border);white-space:pre-wrap;"></div>
-                </div>
-            </div>
-        `;
         document.body.appendChild(app);
 
         // === Theme Toggle ===
