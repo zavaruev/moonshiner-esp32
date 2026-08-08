@@ -1,10 +1,14 @@
 const fs = require('fs');
 const { JSDOM } = require('jsdom');
+const assert = require('assert');
+
 // Modify the script string to expose addLog to window so we can call it
 let jsCode = fs.readFileSync('./moonshiner_ui_v24.js', 'utf8');
 jsCode = jsCode.replace('function addLog(msg) {', 'window.addLog = function(msg) {');
+// Expose initUI to the global window object to test multiple calls
+jsCode = jsCode.replace('function initUI() {', 'window.initUI = initUI;\n    function initUI() {');
 
-const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
+const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>', {
   runScripts: 'dangerously',
   url: "http://localhost/"
 });
@@ -34,12 +38,45 @@ setTimeout(() => {
     const logArea = document.getElementById('log-area');
     const imgs = logArea.querySelectorAll('img');
 
+    let xssFailed = false;
     if (imgs.length > 0) {
       console.log('VULNERABLE: img tag created');
-      process.exit(1);
+      xssFailed = true;
     } else {
       console.log('SECURE: img tag NOT created');
       console.log('Log content:', logArea.innerHTML);
-      process.exit(0);
+    }
+
+    // --- New Tests for initUI ---
+    let initUIFailed = false;
+    try {
+        console.log('\nRunning initUI tests...');
+        // Test 1: UI initialization
+        const app = document.getElementById('custom-app');
+        assert.ok(app !== null, '#custom-app should be created');
+
+        // Test 2: Asset injection
+        const meta = document.querySelector('meta[name="viewport"]');
+        assert.ok(meta !== null, 'meta viewport should be injected');
+
+        // Test 3: Multiple calls to initUI don't duplicate
+        const initialCount = document.querySelectorAll('#custom-app').length;
+        assert.strictEqual(initialCount, 1, 'Should be exactly one #custom-app initially');
+
+        window.initUI(); // Manual second call
+
+        const afterCount = document.querySelectorAll('#custom-app').length;
+        assert.strictEqual(afterCount, 1, 'Should still be exactly one #custom-app after manual call');
+
+        console.log('✅ initUI tests passed');
+    } catch (err) {
+        console.error('❌ initUI Test failed:', err.message);
+        initUIFailed = true;
+    }
+
+    if (xssFailed || initUIFailed) {
+        process.exit(1);
+    } else {
+        process.exit(0);
     }
 }, 500);
