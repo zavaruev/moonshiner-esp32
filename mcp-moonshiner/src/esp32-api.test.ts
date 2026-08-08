@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { parseState, readSensor, setNumber, toggleSwitch, pressButton, readTextSensor, readBinarySensor } from './esp32-api';
+import { parseState, readSensor, readTextSensor, readBinarySensor, setNumber, toggleSwitch, pressButton, getAllTemperatures } from './esp32-api';
 
 describe('security validation for entity IDs', () => {
   const invalidIds = ['invalid/id', '../id', 'id?param=1', 'my-id-with-dashes', 'id!'];
@@ -213,5 +213,52 @@ describe('readBinarySensor', () => {
 
   it('should throw on invalid entity ID', async () => {
     await expect(readBinarySensor('invalid/id')).rejects.toThrow('Invalid entity ID: invalid/id');
+  });
+});
+
+describe('getAllTemperatures', () => {
+  const originalEnv = process.env.ESP32_URL;
+  beforeEach(() => {
+    process.env.ESP32_URL = 'http://test.local';
+    vi.stubGlobal('fetch', vi.fn());
+  });
+
+  afterEach(() => {
+    process.env.ESP32_URL = originalEnv;
+    vi.unstubAllGlobals();
+  });
+
+  it('should fetch column and tank temperatures', async () => {
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve(JSON.stringify({ id: 'sensor-col', value: 78.5, state: '78.5' }))
+    } as any).mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve(JSON.stringify({ id: 'sensor-tank', value: 92.1, state: '92.1' }))
+    } as any);
+
+    const result = await getAllTemperatures();
+    expect(result).toEqual({
+      column: { entity: 'column_temperature', value: 78.5, raw: '78.5' },
+      tank: { entity: 'tank_temperature', value: 92.1, raw: '92.1' }
+    });
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/sensor/column_temperature'), expect.any(Object));
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/sensor/tank_temperature'), expect.any(Object));
+  });
+
+  it('should throw if any read fails', async () => {
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve(JSON.stringify({ id: 'sensor-col', value: 78.5, state: '78.5' }))
+    } as any).mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: 'Server Error'
+    } as any);
+
+    await expect(getAllTemperatures()).rejects.toThrow('HTTP 500 on /sensor/tank_temperature');
   });
 });
