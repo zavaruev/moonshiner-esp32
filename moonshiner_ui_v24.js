@@ -1,4 +1,12 @@
 (function () {
+    function debounce(func, wait) {
+        let timeout;
+        return function (...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
     window.onerror = function (msg, url, line, col, error) {
         const div = document.createElement('div');
         div.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:#1d1d1f;color:#fff;z-index:9999;padding:12px 20px;font-family:system-ui,sans-serif;font-size:14px;border-bottom:2px solid #0066cc';
@@ -1072,14 +1080,6 @@
             }
         }
 
-        function debounce(func, wait) {
-            let timeout;
-            return function (...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), wait);
-            };
-        }
-
         Object.keys(entities).forEach(entityId => {
             const cfg = entities[entityId];
 
@@ -1378,4 +1378,8 @@
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initUI);
     else initUI();
+
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = { debounce };
+    }
 })();
