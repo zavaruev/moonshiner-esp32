@@ -25,12 +25,15 @@ interface EspEntityJson {
 
 export function parseState(raw: string): { value: number | null; state: string } {
   // ESPHome v3 returns JSON for sensors/numbers
-  if (raw.startsWith('{')) {
+  const trimmed = raw.trim();
+  const isJsonLike = (trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'));
+  if (isJsonLike) {
     try {
-      const j: EspEntityJson = JSON.parse(raw);
+      const j: EspEntityJson = JSON.parse(trimmed);
       return { value: j.value ?? null, state: j.state };
     } catch (e) {
-      // Ignore JSON parse errors and fallback to plain text
+      console.error('JSON parse error:', e, 'Raw input:', raw);
+      return { value: null, state: raw };
     }
   }
   // fallback: plain text

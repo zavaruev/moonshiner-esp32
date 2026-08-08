@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { parseState, readSensor, setNumber, toggleSwitch, pressButton } from './esp32-api';
+import { parseState, readSensor, setNumber, toggleSwitch, pressButton, readTextSensor, readBinarySensor } from './esp32-api';
 
 describe('security validation for entity IDs', () => {
   const invalidIds = ['invalid/id', '../id', 'id?param=1', 'my-id-with-dashes', 'id!'];
@@ -95,7 +95,7 @@ describe('parseState', () => {
 
   it('should log a console.error when JSON parse fails on input starting with {', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const raw = '{invalid';
+    const raw = '{invalid}';
     parseState(raw);
     expect(errorSpy).toHaveBeenCalledWith('JSON parse error:', expect.any(Error), 'Raw input:', raw);
     errorSpy.mockRestore();
@@ -154,11 +154,14 @@ describe('API error handling (doFetch/doPost)', () => {
 });
 
 describe('readBinarySensor', () => {
+  const originalEnv = process.env.ESP32_URL;
   beforeEach(() => {
+    process.env.ESP32_URL = 'http://test.local';
     vi.stubGlobal('fetch', vi.fn());
   });
 
   afterEach(() => {
+    process.env.ESP32_URL = originalEnv;
     vi.unstubAllGlobals();
   });
 
