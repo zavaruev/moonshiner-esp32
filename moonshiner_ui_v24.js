@@ -994,9 +994,10 @@
 
         // Restore last known values from sessionStorage
         function restoreSession() {
-            Object.keys(entities).forEach(function (id) {
+            for (const id in entities) {
+                if (!Object.prototype.hasOwnProperty.call(entities, id)) continue;
                 let saved; try { saved = sessionStorage.getItem('ms_' + id); } catch (e) { saved = null; }
-                if (saved === null) return;
+                if (saved === null) continue;
                 const cfg = entities[id];
                 if (cfg.el && !cfg.noStore) {
                     const el = cfg._el;
@@ -1023,7 +1024,7 @@
                     const sw = cfg._sw;
                     if (sw) sw.checked = (saved === 'ON');
                 }
-            });
+            }
         }
         restoreSession();
 
