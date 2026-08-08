@@ -244,8 +244,8 @@ describe('getAllTemperatures', () => {
       tank: { entity: 'tank_temperature', value: 92.1, raw: '92.1' }
     });
     expect(mockFetch).toHaveBeenCalledTimes(2);
-    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/sensor/column_temperature'), expect.any(Object));
-    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/sensor/tank_temperature'), expect.any(Object));
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/sensor/Column%20Temperature'), expect.any(Object));
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/sensor/Tank%20Temperature'), expect.any(Object));
   });
 
   it('should throw if any read fails', async () => {
@@ -259,7 +259,7 @@ describe('getAllTemperatures', () => {
       statusText: 'Server Error'
     } as any);
 
-    await expect(getAllTemperatures()).rejects.toThrow('HTTP 500 on /sensor/tank_temperature');
+    await expect(getAllTemperatures()).rejects.toThrow('HTTP 500 on /sensor/Tank%20Temperature');
   });
 });
 
@@ -287,25 +287,25 @@ describe('getAllStatus', () => {
 
       const url = urlInfo.toString();
 
-      if (url.includes('/sensor/column_temperature')) {
+      if (url.includes('/sensor/Column%20Temperature')) {
         textResponse = JSON.stringify({ id: 'column_temperature', value: 78.5, state: '78.5' });
-      } else if (url.includes('/sensor/tank_temperature')) {
+      } else if (url.includes('/sensor/Tank%20Temperature')) {
         textResponse = JSON.stringify({ id: 'tank_temperature', value: 95.0, state: '95.0' });
-      } else if (url.includes('/sensor/uptime')) {
+      } else if (url.includes('/sensor/Uptime')) {
         textResponse = JSON.stringify({ id: 'uptime', value: 3600, state: '3600' });
-      } else if (url.includes('/sensor/wifi_signal')) {
+      } else if (url.includes('/sensor/WiFi%20Signal')) {
         textResponse = JSON.stringify({ id: 'wifi_signal', value: -65, state: '-65' });
-      } else if (url.includes('/sensor/free_heap')) {
+      } else if (url.includes('/sensor/Free%20Heap')) {
         textResponse = JSON.stringify({ id: 'free_heap', value: 102400, state: '102400' });
-      } else if (url.includes('/text_sensor/status_message')) {
+      } else if (url.includes('/text_sensor/Status%20Message')) {
         textResponse = JSON.stringify({ id: 'status_message', value: null, state: 'Heating' });
-      } else if (url.includes('/binary_sensor/distilling_status')) {
+      } else if (url.includes('/binary_sensor/Distilling%20Status')) {
         textResponse = 'OFF';
-      } else if (url.includes('/binary_sensor/heating_status')) {
+      } else if (url.includes('/binary_sensor/Heating%20Status')) {
         textResponse = 'ON';
-      } else if (url.includes('/binary_sensor/alarm_status')) {
+      } else if (url.includes('/binary_sensor/Alarm%20Status')) {
         textResponse = 'OFF';
-      } else if (url.includes('/text_sensor/reset_reason')) {
+      } else if (url.includes('/text_sensor/Reset%20Reason')) {
         textResponse = JSON.stringify({ id: 'reset_reason', value: null, state: 'PowerOn' });
       }
 
@@ -340,6 +340,6 @@ describe('getAllStatus', () => {
       statusText: 'Server Error'
     } as any);
 
-    await expect(getAllStatus()).rejects.toThrow('HTTP 500 on /sensor/column_temperature');
+    await expect(getAllStatus()).rejects.toThrow('HTTP 500 on /sensor/Column%20Temperature');
   });
 });

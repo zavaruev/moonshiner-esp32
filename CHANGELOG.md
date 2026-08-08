@@ -1,5 +1,36 @@
 # Moonshiner ESP32 - Changelog
 
+## 2026-08-08: ESP-IDF 5.5.0 → 5.5.5 (recommended) - STABLE ✅
+
+- Upgraded framework to **ESP-IDF 5.5.5** — the version recommended by ESPHome 2026.7.4
+- Compile warning "framework version is not recommended" gone
+- New config_hash `f6550e59`; OTA upload OK (~11s); all entity names/queries still working
+- Verified: MCP get_status/read/set, UI write (Delta 0.3→0.45→0.3)
+
+---
+
+## 2026-08-08: ESPHome 2026.7.4 + Web Server API Breaking Change - STABLE ✅
+
+### Summary
+- Flashed firmware compiled with **ESPHome 2026.7.4** (was 2026.6.5), merged 10 PRs from Jules
+- Discovered **breaking change** in `web_server` v3 REST API
+
+### Critical: Web Server API Breaking Change (2026.6.5 → 2026.7.4)
+- **Problem**: All REST endpoints returned `404` after upgrade (`/sensor/uptime`, `/number/target_column_temp`, etc.)
+- **Root cause**: web_server v3 now matches entities **by display name** (`entity->get_name()`, e.g. `sensor/Column Temperature`, `number/Delta`) instead of by snake_case ID (`sensor/column_temperature`)
+- **Also changed**: POST requests now require `Content-Length: 0` (curl gets `411` otherwise)
+- **Fix**:
+  - MCP server (`mcp-moonshiner/src/esp32-api.ts`): added `ENTITY_NAMES` id→name map, URL-encodes names (`%20`), POST sends `Content-Length: 0`
+  - UI v24 (`moonshiner_ui_v24.js`): `api` paths in entity config switched from IDs to names (browser URL-encodes automatically)
+- **Not affected**: SSE `/events` channel still uses snake_case IDs — UI state display works as before
+- 66 vitest tests updated & passing; `node tests.js` passing
+
+### Deploy notes
+- First ESP-IDF 5.5.0 framework download takes ~20-30 min (6 toolchains, ~1-2 GB)
+- Kill stuck compiles from inside container: `docker exec esphome sh -c 'for p in /proc/[0-9]*; do ... kill'` (host `kill` can't reach container PIDs)
+
+---
+
 ## 2025-12-03: OLED Display Enabled (v24 + OLED) - STABLE ✅
 
 ### New Features

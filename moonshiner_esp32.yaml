@@ -44,7 +44,7 @@ esp32:
   board: esp32dev
   framework:
     type: esp-idf
-    version: 5.5.0
+    version: 5.5.5
     sdkconfig_options:
       CONFIG_LWIP_MAX_SOCKETS: "16" # Increase max sockets from 10 to 16 for multiple simultaneous connections
       CONFIG_ESP_TASK_WDT_TIMEOUT_S: "15" # Bump TWDT from 5s to 15s (long OneWire retries)

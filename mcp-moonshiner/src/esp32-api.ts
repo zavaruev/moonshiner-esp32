@@ -50,7 +50,7 @@ async function doFetch(url: string): Promise<string> {
 async function doPost(url: string): Promise<void> {
   const res = await fetch(`${getBase()}${url}`, {
     method: 'POST',
-    headers: { Authorization: getAuth() },
+    headers: { Authorization: getAuth(), 'Content-Length': '0' },
     signal: AbortSignal.timeout(5000),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status} on POST ${url}`);
@@ -68,9 +68,37 @@ export function validateId(id: string) {
   }
 }
 
+const ENTITY_NAMES: Record<string, string> = {
+  column_temperature: 'Column Temperature',
+  tank_temperature: 'Tank Temperature',
+  uptime: 'Uptime',
+  wifi_signal: 'WiFi Signal',
+  free_heap: 'Free Heap',
+  loop_time: 'Loop Time',
+  target_column_temp: 'Target Column Temp',
+  delta: 'Delta',
+  max_tank_temp: 'Max Tank Temp',
+  coef_otbora: 'Coef Otbora',
+  heater_power: 'Heater Power',
+  valve_high_setting: 'Valve High Setting',
+  valve_low_setting: 'Valve Low Setting',
+  buzzer_volume: 'Buzzer Volume',
+  refresh_ui: 'Refresh UI',
+  restart_process: 'Restart Process',
+  use_reduction_coefficient: 'Use Reduction Coefficient',
+  disable_upper_valve_closing: 'Disable Upper Valve Closing',
+  distilling_status: 'Distilling Status',
+  heating_status: 'Heating Status',
+  alarm_status: 'Alarm Status',
+  status_message: 'Status Message',
+  diagnostic_message: 'Diagnostic Message',
+  reset_reason: 'Reset Reason',
+};
+
 async function readEntity(type: string, id: string): Promise<TempReading> {
   validateId(id);
-  const raw = await doFetch(`/${type}/${id}`);
+  const name = ENTITY_NAMES[id] ?? id;
+  const raw = await doFetch(`/${type}/${encodeURIComponent(name)}`);
   const { value, state } = parseState(raw);
   return { entity: id, value, raw: state };
 }
@@ -88,15 +116,18 @@ export const readBinarySensor = async (id: string): Promise<boolean> => {
 
 export const setNumber = (id: string, value: number) => {
   validateId(id);
-  return doPost(`/number/${id}/set?value=${value}`);
+  const name = ENTITY_NAMES[id] ?? id;
+  return doPost(`/number/${encodeURIComponent(name)}/set?value=${value}`);
 };
 export const toggleSwitch = (id: string, on: boolean) => {
   validateId(id);
-  return doPost(`/switch/${id}/${on ? 'turn_on' : 'turn_off'}`);
+  const name = ENTITY_NAMES[id] ?? id;
+  return doPost(`/switch/${encodeURIComponent(name)}/${on ? 'turn_on' : 'turn_off'}`);
 };
 export const pressButton = (id: string) => {
   validateId(id);
-  return doPost(`/button/${id}/press`);
+  const name = ENTITY_NAMES[id] ?? id;
+  return doPost(`/button/${encodeURIComponent(name)}/press`);
 };
 
 export async function getAllTemperatures(): Promise<{ column: TempReading; tank: TempReading }> {

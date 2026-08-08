@@ -12,9 +12,9 @@ opencode.json             # MCP config with http://admin:moonshine@... URL
 CHANGELOG.md / AGENTS.md / IMPROVEMENTS.md
 ```
 
-- **ESPHome version**: `2026.6.5` (Docker container `esphome/esphome:latest`)
+- **ESPHome version**: `2026.7.4` (Docker container `esphome/esphome:latest`)
 - **Board**: ESP32 dev (esp32dev)
-- **Framework**: **esp-idf** (v5.5.0)
+- **Framework**: **esp-idf** (v5.5.5 — recommended by 2026.7.4; if ESPHome raises the default, update the version in the yaml)
 
 ## Required secrets (`secrets.yaml`)
 
@@ -100,6 +100,7 @@ ssh alexander@192.168.22.102 \
 
 ## Known bugs / gotchas
 
+- **Web server v3 REST API (≥2026.7.4) matches entities by display name, not ID**: `/sensor/Column Temperature` works, `/sensor/column_temperature` → 404. POST requires `Content-Length: 0`. MCP handles this via `ENTITY_NAMES` map in `esp32-api.ts`; UI `api` paths use names. SSE `/events` still uses IDs.
 - If `last_temp_update` watchdog fires (60s no update), all outputs shut down — recover by reboot
 - SH1106 chips sold as "SSD1306" — use model `SH1106 128x64` not `SSD1306 128x64`
 - UI v23→v24 fixed: debounce DDOS (hundreds of req/s on slider), default values disappearing (value-with-units parsing), entity alias 404s

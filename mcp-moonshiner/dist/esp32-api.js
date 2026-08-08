@@ -18,13 +18,16 @@ export function getAuth() {
 }
 export function parseState(raw) {
     // ESPHome v3 returns JSON for sensors/numbers
-    if (raw.startsWith('{')) {
+    const trimmed = raw.trim();
+    const isJsonLike = (trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'));
+    if (isJsonLike) {
         try {
-            const j = JSON.parse(raw);
+            const j = JSON.parse(trimmed);
             return { value: j.value ?? null, state: j.state };
         }
         catch (e) {
-            // Ignore JSON parse errors and fallback to plain text
+            console.error('JSON parse error:', e, 'Raw input:', raw);
+            return { value: null, state: raw };
         }
     }
     // fallback: plain text
@@ -40,7 +43,7 @@ async function doFetch(url) {
 async function doPost(url) {
     const res = await fetch(`${getBase()}${url}`, {
         method: 'POST',
-        headers: { Authorization: getAuth() },
+        headers: { Authorization: getAuth(), 'Content-Length': '0' },
         signal: AbortSignal.timeout(5000),
     });
     if (!res.ok)
@@ -51,9 +54,36 @@ export function validateId(id) {
         throw new Error(`Invalid entity ID: ${id}`);
     }
 }
+const ENTITY_NAMES = {
+    column_temperature: 'Column Temperature',
+    tank_temperature: 'Tank Temperature',
+    uptime: 'Uptime',
+    wifi_signal: 'WiFi Signal',
+    free_heap: 'Free Heap',
+    loop_time: 'Loop Time',
+    target_column_temp: 'Target Column Temp',
+    delta: 'Delta',
+    max_tank_temp: 'Max Tank Temp',
+    coef_otbora: 'Coef Otbora',
+    heater_power: 'Heater Power',
+    valve_high_setting: 'Valve High Setting',
+    valve_low_setting: 'Valve Low Setting',
+    buzzer_volume: 'Buzzer Volume',
+    refresh_ui: 'Refresh UI',
+    restart_process: 'Restart Process',
+    use_reduction_coefficient: 'Use Reduction Coefficient',
+    disable_upper_valve_closing: 'Disable Upper Valve Closing',
+    distilling_status: 'Distilling Status',
+    heating_status: 'Heating Status',
+    alarm_status: 'Alarm Status',
+    status_message: 'Status Message',
+    diagnostic_message: 'Diagnostic Message',
+    reset_reason: 'Reset Reason',
+};
 async function readEntity(type, id) {
     validateId(id);
-    const raw = await doFetch(`/${type}/${id}`);
+    const name = ENTITY_NAMES[id] ?? id;
+    const raw = await doFetch(`/${type}/${encodeURIComponent(name)}`);
     const { value, state } = parseState(raw);
     return { entity: id, value, raw: state };
 }
@@ -69,15 +99,18 @@ export const readBinarySensor = async (id) => {
 };
 export const setNumber = (id, value) => {
     validateId(id);
-    return doPost(`/number/${id}/set?value=${value}`);
+    const name = ENTITY_NAMES[id] ?? id;
+    return doPost(`/number/${encodeURIComponent(name)}/set?value=${value}`);
 };
 export const toggleSwitch = (id, on) => {
     validateId(id);
-    return doPost(`/switch/${id}/${on ? 'turn_on' : 'turn_off'}`);
+    const name = ENTITY_NAMES[id] ?? id;
+    return doPost(`/switch/${encodeURIComponent(name)}/${on ? 'turn_on' : 'turn_off'}`);
 };
 export const pressButton = (id) => {
     validateId(id);
-    return doPost(`/button/${id}/press`);
+    const name = ENTITY_NAMES[id] ?? id;
+    return doPost(`/button/${encodeURIComponent(name)}/press`);
 };
 export async function getAllTemperatures() {
     const [column, tank] = await Promise.all([
