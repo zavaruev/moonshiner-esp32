@@ -76,7 +76,98 @@ setTimeout(() => {
 
     if (xssFailed || initUIFailed) {
         process.exit(1);
-    } else {
-        process.exit(0);
     }
+    console.log("Test 1 passed!");
+}, 500);
+
+// === Test 2: Fetch Error Handling Coverage ===
+console.log("\nStarting Test 2: Fetch Error Handling");
+const dom2 = new JSDOM('<!DOCTYPE html><html><body>' +
+  '<input id="in-target" value="10" />' +
+  '<input id="in-target-slider" value="10" />' +
+  '<input id="sw-reduction" type="checkbox" />' +
+  '<div id="btn-restart"></div>' +
+  '</body></html>', {
+  runScripts: 'dangerously',
+  url: "http://localhost/"
+});
+const window2 = dom2.window;
+const document2 = window2.document;
+
+window2.matchMedia = () => ({ matches: false });
+window2.EventSource = class {
+  addEventListener() {}
+  onerror() {}
+};
+
+// Mock fetch to simulate a network error
+window2.fetch = async (url, options) => {
+    throw new Error('Network error');
+};
+
+// Mock confirm to always say yes for the restart button
+window2.confirm = () => true;
+
+// Inject hooks to capture logs
+let jsCode2 = fs.readFileSync('./moonshiner_ui_v24.js', 'utf8');
+jsCode2 = jsCode2.replace('const entities = {', 'window.entities = {');
+jsCode2 = jsCode2.replace('function addLog(msg) {', 'window.addLogs = window.addLogs || []; function addLog(msg) { window.addLogs.push(msg);');
+
+const scriptEl2 = document2.createElement('script');
+scriptEl2.textContent = jsCode2;
+document2.body.appendChild(scriptEl2);
+
+setTimeout(() => {
+    // Trigger Number input error
+    if (window2.entities && window2.entities['number-target_column_temp']) {
+        const cfg = window2.entities['number-target_column_temp'];
+        const input = document2.getElementById(cfg.in);
+        if (input) {
+            input.value = "20";
+            input.dispatchEvent(new window2.Event('change'));
+        }
+    }
+
+    // Trigger Switch toggle error
+    if (window2.entities && window2.entities['switch-use_reduction_coefficient']) {
+        const cfg = window2.entities['switch-use_reduction_coefficient'];
+        const switchEl = document2.getElementById(cfg.sw);
+        if (switchEl) {
+            switchEl.checked = true;
+            switchEl.dispatchEvent(new window2.Event('change'));
+        }
+    }
+
+    // Trigger Restart error
+    const restartBtn = document2.getElementById('btn-restart');
+    if (restartBtn) {
+        restartBtn.click();
+    }
+
+    setTimeout(() => {
+        let passed = true;
+
+        if (!window2.addLogs || !window2.addLogs.some(log => log.includes('Failed to update number-target_column_temp'))) {
+            console.error("FAIL: Missing log for number update error");
+            passed = false;
+        }
+
+        if (!window2.addLogs || !window2.addLogs.some(log => log.includes('Failed to toggle switch-use_reduction_coefficient'))) {
+            console.error("FAIL: Missing log for switch toggle error");
+            passed = false;
+        }
+
+        if (!window2.addLogs || !window2.addLogs.some(log => log.includes('Failed to restart'))) {
+            console.error("FAIL: Missing log for restart error");
+            passed = false;
+        }
+
+        if (passed) {
+            console.log("SECURE: All fetch error handling tests passed!");
+            process.exit(0);
+        } else {
+            console.error("FAIL: Some tests failed, logs captured:", window2.addLogs);
+            process.exit(1);
+        }
+    }, 1000);
 }, 500);
