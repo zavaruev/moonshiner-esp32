@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { parseState, readSensor, readTextSensor, readBinarySensor, setNumber, toggleSwitch, pressButton, getAllTemperatures } from './esp32-api';
+import { parseState, readSensor, readTextSensor, readBinarySensor, setNumber, toggleSwitch, pressButton, getAllTemperatures, getAllStatus } from './esp32-api';
 
 describe('security validation for entity IDs', () => {
   const invalidIds = ['invalid/id', '../id', 'id?param=1', 'my-id-with-dashes', 'id!'];
