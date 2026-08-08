@@ -9,6 +9,10 @@ describe('security validation for entity IDs', () => {
       await expect(readSensor(id)).rejects.toThrow(`Invalid entity ID`);
     });
 
+    it(`should throw on invalid ID in readTextSensor: ${id}`, async () => {
+      await expect(readTextSensor(id)).rejects.toThrow(`Invalid entity ID`);
+    });
+
     it(`should throw on invalid ID in setNumber: ${id}`, () => {
       expect(() => setNumber(id, 42)).toThrow(`Invalid entity ID`);
     });
