@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { parseState, readSensor, readTextSensor, readBinarySensor, setNumber, toggleSwitch, pressButton, getAllTemperatures } from './esp32-api';
+import { parseState, readSensor, readTextSensor, readBinarySensor, setNumber, toggleSwitch, pressButton, getAllTemperatures, getAllStatus } from './esp32-api';
 
 describe('security validation for entity IDs', () => {
   const invalidIds = ['invalid/id', '../id', 'id?param=1', 'my-id-with-dashes', 'id!'];
@@ -260,5 +260,86 @@ describe('getAllTemperatures', () => {
     } as any);
 
     await expect(getAllTemperatures()).rejects.toThrow('HTTP 500 on /sensor/tank_temperature');
+  });
+});
+
+describe('getAllStatus', () => {
+  const originalEnv = process.env.ESP32_URL;
+
+  beforeEach(() => {
+    process.env.ESP32_URL = 'http://test.local';
+    vi.stubGlobal('fetch', vi.fn());
+  });
+
+  afterEach(() => {
+    process.env.ESP32_URL = originalEnv;
+    vi.unstubAllGlobals();
+  });
+
+  it('should fetch all required sensors and return a mapped record', async () => {
+    const mockFetch = vi.mocked(fetch);
+
+    // Provide mocked responses based on URL called
+    mockFetch.mockImplementation(async (urlInfo, options) => {
+      let state = 'unknown';
+      let value = null;
+      let textResponse = '';
+
+      const url = urlInfo.toString();
+
+      if (url.includes('/sensor/column_temperature')) {
+        textResponse = JSON.stringify({ id: 'column_temperature', value: 78.5, state: '78.5' });
+      } else if (url.includes('/sensor/tank_temperature')) {
+        textResponse = JSON.stringify({ id: 'tank_temperature', value: 95.0, state: '95.0' });
+      } else if (url.includes('/sensor/uptime')) {
+        textResponse = JSON.stringify({ id: 'uptime', value: 3600, state: '3600' });
+      } else if (url.includes('/sensor/wifi_signal')) {
+        textResponse = JSON.stringify({ id: 'wifi_signal', value: -65, state: '-65' });
+      } else if (url.includes('/sensor/free_heap')) {
+        textResponse = JSON.stringify({ id: 'free_heap', value: 102400, state: '102400' });
+      } else if (url.includes('/text_sensor/status_message')) {
+        textResponse = JSON.stringify({ id: 'status_message', value: null, state: 'Heating' });
+      } else if (url.includes('/binary_sensor/distilling_status')) {
+        textResponse = 'OFF';
+      } else if (url.includes('/binary_sensor/heating_status')) {
+        textResponse = 'ON';
+      } else if (url.includes('/binary_sensor/alarm_status')) {
+        textResponse = 'OFF';
+      } else if (url.includes('/text_sensor/reset_reason')) {
+        textResponse = JSON.stringify({ id: 'reset_reason', value: null, state: 'PowerOn' });
+      }
+
+      return {
+        ok: true,
+        text: () => Promise.resolve(textResponse)
+      } as any;
+    });
+
+    const status = await getAllStatus();
+
+    expect(status).toEqual({
+      temperatures: { column: 78.5, tank: 95.0 },
+      uptime_sec: 3600,
+      wifi_signal_dbm: -65,
+      free_heap_bytes: 102400,
+      status: 'Heating',
+      distilling: false,
+      heating: true,
+      alarm: false,
+      reset_reason: 'PowerOn',
+    });
+
+    expect(mockFetch).toHaveBeenCalledTimes(10);
+  });
+
+  it('should propagate errors if a fetch fails', async () => {
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: 'Server Error'
+    } as any);
+
+    await expect(getAllStatus()).rejects.toThrow('HTTP 500 on /sensor/column_temperature');
   });
 });
