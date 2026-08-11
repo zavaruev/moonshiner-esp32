@@ -1369,7 +1369,7 @@
                 if (runEl) runEl.style.opacity = '';
             }
             const dc = document.getElementById('val-diag-conn');
-            if (dc) dc.innerHTML = state ? 'Connected' : 'Disconnected';
+            if (dc) dc.textContent = state ? 'Connected' : 'Disconnected';
         }
 
         source.addEventListener('state', e => {
