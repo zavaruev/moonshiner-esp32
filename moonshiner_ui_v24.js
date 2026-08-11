@@ -1287,14 +1287,17 @@
 
         // Stepper buttons for numeric inputs
         document.querySelectorAll('.btn-stepper').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const targetId = this.dataset.stepper;
-                const step = parseFloat(this.dataset.step);
-                const input = document.getElementById(targetId);
+            const targetId = btn.dataset.stepper;
+            const step = parseFloat(btn.dataset.step);
+            const input = document.getElementById(targetId);
+            const sliderId = targetId + '-slider';
+            const slider = document.getElementById(sliderId);
+
+            btn.addEventListener('click', () => {
                 if (!input) return;
-                this.classList.remove('sending');
-                void this.offsetWidth;
-                this.classList.add('sending');
+                btn.classList.remove('sending');
+                void btn.offsetWidth;
+                btn.classList.add('sending');
                 const current = parseFloat(input.value) || 0;
                 const min = parseFloat(input.min) || 0;
                 const max = parseFloat(input.max) || 100;
@@ -1302,8 +1305,6 @@
                 const next = Math.min(max, Math.max(min, parseFloat((current + step).toFixed(precision))));
                 input.value = next;
                 input.dispatchEvent(new Event('change'));
-                const sliderId = targetId + '-slider';
-                const slider = document.getElementById(sliderId);
                 if (slider) slider.value = next;
             });
         });
