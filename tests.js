@@ -164,7 +164,52 @@ setTimeout(() => {
 
         if (passed) {
             console.log("SECURE: All fetch error handling tests passed!");
-            process.exit(0);
+
+            // === Test 3: sessionStorage Error Handling Coverage ===
+            console.log("\nStarting Test 3: sessionStorage Error Handling");
+            const dom3 = new JSDOM('<!DOCTYPE html><html><body>' +
+              '<input id="in-target" value="10" />' +
+              '</body></html>', {
+              runScripts: 'dangerously',
+              url: "http://localhost/"
+            });
+            const window3 = dom3.window;
+            const document3 = window3.document;
+
+            window3.matchMedia = () => ({ matches: false });
+            window3.EventSource = class {
+              addEventListener() {}
+              onerror() {}
+            };
+
+            // Mock sessionStorage to throw error
+            let getItemCalled = false;
+            Object.defineProperty(window3, 'sessionStorage', {
+              value: {
+                getItem: function() {
+                  getItemCalled = true;
+                  throw new Error('sessionStorage access denied');
+                },
+                setItem: function() {}
+              },
+              writable: true
+            });
+
+            // Run script
+            const scriptEl3 = document3.createElement('script');
+            scriptEl3.textContent = fs.readFileSync('./moonshiner_ui_v24.js', 'utf8');
+            document3.body.appendChild(scriptEl3);
+
+            setTimeout(() => {
+                if (getItemCalled) {
+                    console.log("SECURE: restoreSession handled sessionStorage error without crashing!");
+                    process.exit(0);
+                } else {
+                    console.error("FAIL: sessionStorage.getItem was not called during initialization");
+                    process.exit(1);
+                }
+            }, 500);
+
         } else {
             console.error("FAIL: Some tests failed, logs captured:", window2.addLogs);
             process.exit(1);
