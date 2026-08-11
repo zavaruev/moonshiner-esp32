@@ -1204,7 +1204,7 @@
         function renderLog() {
             let el = logAreaElement || (logAreaElement = document.getElementById('log-area'));
             if (el) {
-                el.innerHTML = '';
+                el.textContent = '';
                 const frag = document.createDocumentFragment();
                 logBuffer.forEach(function (l) {
                     const div = document.createElement('div');
@@ -1375,7 +1375,7 @@
                 if (runEl) runEl.style.opacity = '';
             }
             const dc = document.getElementById('val-diag-conn');
-            if (dc) dc.innerHTML = state ? 'Connected' : 'Disconnected';
+            if (dc) dc.textContent = state ? 'Connected' : 'Disconnected';
         }
 
         source.addEventListener('state', e => {
