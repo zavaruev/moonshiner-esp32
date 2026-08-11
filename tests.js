@@ -171,3 +171,79 @@ setTimeout(() => {
         }
     }, 1000);
 }, 500);
+
+// === Test 3: Theme Application Coverage ===
+console.log("\nStarting Test 3: Theme Application (applyTheme)");
+
+const dom3 = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>', {
+  runScripts: 'dangerously',
+  url: "http://localhost/"
+});
+const window3 = dom3.window;
+const document3 = window3.document;
+
+window3.matchMedia = () => ({ matches: false });
+window3.EventSource = class {
+  addEventListener() {}
+  onerror() {}
+};
+
+// Mock localStorage
+window3.localStorage = {
+    store: {},
+    getItem(key) { return this.store[key] || null; },
+    setItem(key, value) { this.store[key] = value.toString(); },
+    removeItem(key) { delete this.store[key]; },
+    clear() { this.store = {}; }
+};
+
+let jsCode3 = fs.readFileSync('./moonshiner_ui_v24.js', 'utf8');
+const scriptEl3 = document3.createElement('script');
+scriptEl3.textContent = jsCode3;
+document3.body.appendChild(scriptEl3);
+
+setTimeout(() => {
+    let test3Failed = false;
+    try {
+        const themeToggleBtn = document3.getElementById('btn-theme');
+        const themeIcon = themeToggleBtn.querySelector('.icon');
+
+        // Initial state check (assuming default is light because matchMedia returns false for dark)
+        assert.strictEqual(document3.documentElement.getAttribute('data-theme'), 'light', 'Initial data-theme should be light');
+        assert.strictEqual(window3.localStorage.getItem('theme'), 'light', 'Initial localStorage theme should be light');
+        assert.strictEqual(themeIcon.textContent, '☾', 'Initial icon should be ☾');
+        const initialLink = document3.querySelector('link[rel="icon"]');
+        assert.ok(initialLink, 'Favicon link should be present');
+        assert.ok(initialLink.href.includes('%230066cc'), 'Favicon SVG should contain light theme color #0066cc');
+
+        // Toggle to dark theme
+        themeToggleBtn.click();
+
+        assert.strictEqual(document3.documentElement.getAttribute('data-theme'), 'dark', 'Data-theme should be dark after toggle');
+        assert.strictEqual(window3.localStorage.getItem('theme'), 'dark', 'LocalStorage theme should be dark after toggle');
+        assert.strictEqual(themeIcon.textContent, '☀', 'Icon should be ☀ after toggle');
+        const darkLink = document3.querySelector('link[rel="icon"]');
+        assert.ok(darkLink.href.includes('%232997ff'), 'Favicon SVG should contain dark theme color #2997ff');
+
+        // Toggle back to light theme
+        themeToggleBtn.click();
+
+        assert.strictEqual(document3.documentElement.getAttribute('data-theme'), 'light', 'Data-theme should be light after second toggle');
+        assert.strictEqual(window3.localStorage.getItem('theme'), 'light', 'LocalStorage theme should be light after second toggle');
+        assert.strictEqual(themeIcon.textContent, '☾', 'Icon should be ☾ after second toggle');
+        const lightLink = document3.querySelector('link[rel="icon"]');
+        assert.ok(lightLink.href.includes('%230066cc'), 'Favicon SVG should contain light theme color #0066cc after second toggle');
+
+        console.log("✅ Theme application tests passed!");
+    } catch (err) {
+        console.error("❌ Theme application tests failed:", err);
+        test3Failed = true;
+    }
+
+    if (test3Failed) {
+        process.exit(1);
+    }
+
+    // Everything passed
+    process.exit(0);
+}, 500);
