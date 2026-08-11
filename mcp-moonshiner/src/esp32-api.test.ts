@@ -100,6 +100,15 @@ describe('parseState', () => {
     expect(errorSpy).toHaveBeenCalledWith('JSON parse error:', expect.any(Error), 'Raw input:', raw);
     errorSpy.mockRestore();
   });
+
+  it('should truncate raw input in console.error if it exceeds 100 characters', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const raw = '{' + 'a'.repeat(150) + '}';
+    parseState(raw);
+    const expectedSafeRaw = raw.substring(0, 100) + '...';
+    expect(errorSpy).toHaveBeenCalledWith('JSON parse error:', expect.any(Error), 'Raw input:', expectedSafeRaw);
+    errorSpy.mockRestore();
+  });
 });
 
 describe('API error handling (doFetch/doPost)', () => {
