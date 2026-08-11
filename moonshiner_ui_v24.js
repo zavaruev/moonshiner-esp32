@@ -1202,11 +1202,13 @@
             let el = logAreaElement || (logAreaElement = document.getElementById('log-area'));
             if (el) {
                 el.innerHTML = '';
+                const frag = document.createDocumentFragment();
                 logBuffer.forEach(function (l) {
                     const div = document.createElement('div');
                     div.textContent = l;
-                    el.appendChild(div);
+                    frag.appendChild(div);
                 });
+                el.appendChild(frag);
                 el.scrollTop = el.scrollHeight;
             }
         }
