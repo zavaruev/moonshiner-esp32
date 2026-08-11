@@ -32,7 +32,8 @@ export function parseState(raw: string): { value: number | null; state: string }
       const j: EspEntityJson = JSON.parse(trimmed);
       return { value: j.value ?? null, state: j.state };
     } catch (e) {
-      console.error('JSON parse error:', e, 'Raw input:', raw);
+      const safeRaw = raw.length > 100 ? raw.substring(0, 100) + '...' : raw;
+      console.error('JSON parse error:', e, 'Raw input:', safeRaw);
       return { value: null, state: raw };
     }
   }
