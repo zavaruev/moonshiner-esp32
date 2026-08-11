@@ -63,8 +63,8 @@ describe('index.ts (MCP Server)', () => {
     // Mock for parseArgs()
     process.argv = ['node', 'index.js'];
     process.env = { ...originalEnv };
-    process.exit = vi.fn() as unknown as typeof process.exit;
-    process.stderr.write = vi.fn() as unknown as typeof process.stderr.write;
+    process.exit = vi.fn() as any;
+    process.stderr.write = vi.fn() as any;
   });
 
   afterEach(() => {
