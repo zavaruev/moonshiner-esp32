@@ -1181,11 +1181,13 @@
             if (el) {
                 if (el.children.length === 0 && logBuffer.length > 1) {
                     // First time discovering the element, render everything in the buffer
+                    const frag = document.createDocumentFragment();
                     for (var i = 0; i < logBuffer.length; i++) {
                         var bDiv = document.createElement('div');
                         bDiv.textContent = logBuffer[i];
-                        el.appendChild(bDiv);
+                        frag.appendChild(bDiv);
                     }
+                    el.appendChild(frag);
                 } else {
                     var div = document.createElement('div');
                     div.textContent = logStr;
