@@ -68,7 +68,7 @@ async function runTests() {
   assert(connEl.classList.contains('disconnected') === false, 'connEl should not have disconnected class');
   assert(connEl.style.opacity === '1', 'connEl.style.opacity is 1');
   assert(runEl.style.opacity === '0.4', 'runEl.style.opacity is 0.4');
-  assert(dc.innerHTML === 'Connected', 'dc.innerHTML is Connected');
+  assert(dc.textContent === 'Connected', 'dc.textContent is Connected');
 
   // Test 2: Disconnected state
   ({ window, document } = await setupDOM());
@@ -82,7 +82,7 @@ async function runTests() {
   assert(connEl.classList.contains('disconnected') === true, 'connEl should have disconnected class');
   assert(connEl.style.opacity === '1', 'connEl.style.opacity is 1');
   assert(runEl.style.opacity === '', 'runEl.style.opacity is empty');
-  assert(dc.innerHTML === 'Disconnected', 'dc.innerHTML is Disconnected');
+  assert(dc.textContent === 'Disconnected', 'dc.textContent is Disconnected');
 
   // Test 3: Missing elements
   ({ window, document } = await setupDOM());
