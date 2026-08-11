@@ -1353,11 +1353,11 @@
                 // Modem blink: Connected bright, RUNNING dim
                 connEl.style.opacity = '1';
                 if (runEl) runEl.style.opacity = '0.4';
-                setTimeout(function () {
+                setTimeout(() => {
                     // Alternate: Connected dim, RUNNING bright
                     connEl.style.opacity = '0.4';
                     if (runEl) runEl.style.opacity = '1';
-                    setTimeout(function () {
+                    setTimeout(() => {
                         connEl.style.opacity = '';
                         if (runEl) runEl.style.opacity = '';
                     }, 150);
@@ -1375,7 +1375,7 @@
         source.addEventListener('state', e => {
             setConnected(true);
             clearTimeout(connTimer);
-            connTimer = setTimeout(function () { setConnected(false); }, 5000);
+            connTimer = setTimeout(() => { setConnected(false); }, 5000);
 
             const data = JSON.parse(e.data);
 
@@ -1503,7 +1503,7 @@
                 if (slider) slider.value = value;
             }
             input.dispatchEvent(new Event('change'));
-            setTimeout(function () { input.classList.remove('sending'); }, 1000);
+            setTimeout(() => { input.classList.remove('sending'); }, 1000);
         });
     }
 
