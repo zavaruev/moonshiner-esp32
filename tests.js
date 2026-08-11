@@ -203,7 +203,7 @@ setTimeout(() => {
             setTimeout(() => {
                 if (getItemCalled) {
                     console.log("SECURE: restoreSession handled sessionStorage error without crashing!");
-                    process.exit(0);
+                    runThemeTests();
                 } else {
                     console.error("FAIL: sessionStorage.getItem was not called during initialization");
                     process.exit(1);
@@ -218,6 +218,7 @@ setTimeout(() => {
 }, 500);
 
 // === Test 3: Theme Application Coverage ===
+function runThemeTests() {
 console.log("\nStarting Test 3: Theme Application (applyTheme)");
 
 const dom3 = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>', {
@@ -292,3 +293,4 @@ setTimeout(() => {
     // Everything passed
     process.exit(0);
 }, 500);
+}
