@@ -8,6 +8,7 @@
 - All merged via GitHub (head commits landed in main); closed as duplicates: #65 (=#66), #68 (=#76)
 - Test suite green: vitest 67/67, tests.js 3 blocks, test_theme 17, test_setConnected 11, test_updateTempVisuals 4
 - **No firmware change** — UI/MCP only, no reflash needed
+- **Deployed**: OTA upload 12.08.2026 (config_hash `f6550e59`); verified new UI live (innerHTML=0, textContent+DocumentFragment present)
 
 ---
 
