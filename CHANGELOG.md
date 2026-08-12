@@ -1,5 +1,16 @@
 # Moonshiner ESP32 - Changelog
 
+## 2026-08-12: Merged 13 PRs from Jules (perf/security/tests) - STABLE ✅
+
+- **Security**: replaced remaining `innerHTML` with `textContent` (log render + val-diag-conn) [#76]; truncated raw JSON in MCP parseState error logs (sensitive data exposure) [#70]; strict types instead of `any` in MCP tests [#69]
+- **Perf (UI)**: DocumentFragment in `renderLog` and `addLog` [#67, #79]; `Object.keys()` loops in `h()` and `restoreSession` [#73, #75]; stepper DOM cache [#77]; arrow functions in setTimeout, `var`→`let/const` [#64, #66]
+- **Tests**: theme preferences (test_theme.js, 17 tests) [#74]; applyTheme + sessionStorage error handling chained in tests.js [#71, #72]; updateTempVisuals coverage (4 tests) [#78]
+- All merged via GitHub (head commits landed in main); closed as duplicates: #65 (=#66), #68 (=#76)
+- Test suite green: vitest 67/67, tests.js 3 blocks, test_theme 17, test_setConnected 11, test_updateTempVisuals 4
+- **No firmware change** — UI/MCP only, no reflash needed
+
+---
+
 ## 2026-08-08: ESP-IDF 5.5.0 → 5.5.5 (recommended) - STABLE ✅
 
 - Upgraded framework to **ESP-IDF 5.5.5** — the version recommended by ESPHome 2026.7.4
