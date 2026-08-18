@@ -739,316 +739,336 @@
             return el;
         }
 
+        function createTopBarCard() {
+            return h('div', {"className":"card"}, [
+                h('div', {"className":"top-bar"}, [
+                    h('div', {"className":"top-bar-left"}, [
+                        h('div', {"className":"badge-row"}, [
+                            h('span', {"id":"conn-status","className":"badge badge-conn disconnected"}, [
+                                "Connecting..."
+                            ]),
+                            h('span', {"className":"badge badge-status","id":"val-msg"}, [
+                                "Connecting..."
+                            ]),
+                            h('span', {"id":"st-distilling","className":"badge"}, [
+                                "Distilling"
+                            ]),
+                            h('span', {"id":"st-heating","className":"badge"}, [
+                                "Heating"
+                            ]),
+                            h('span', {"id":"st-alarm","className":"badge"}, [
+                                "Alarm"
+                            ])
+                        ]),
+                        h('button', {"className":"btn btn-danger","id":"btn-restart","style":"display:none;padding:4px 12px;font-size:11px;"}, [
+                            "Restart"
+                        ])
+                    ]),
+                    h('div', {"className":"top-bar-right"}, [
+                        h('div', {"className":"vol-mini"}, [
+                            h('span', {"className":"vol-icon","id":"vol-icon"}, [
+                                "♫"
+                            ]),
+                            h('input', {"type":"range","id":"in-vol-slider","min":"0","max":"100","step":"1","value":"100"}),
+                            h('span', {"className":"vol-val","id":"vol-val"}, [
+                                "100"
+                            ]),
+                            h('input', {"type":"number","id":"in-vol","value":"100","style":"display:none;"})
+                        ]),
+                        h('button', {"className":"theme-toggle","id":"btn-theme","aria-label":"Toggle theme"}, [
+                            h('span', {"className":"icon"}, [
+                                "☾"
+                            ])
+                        ])
+                    ])
+                ])
+            ]);
+        }
+
+        function createTemperaturesCard() {
+            return h('div', {"className":"card","style":"padding:16px"}, [
+                h('div', {"className":"card-header","style":"margin-bottom:12px"}, [
+                    h('h2', {"className":"card-title"}, [
+                        "Temperatures"
+                    ])
+                ]),
+                h('div', {"className":"sensor-grid"}, [
+                    h('div', {"className":"sensor-item","id":"col-temp-card"}, [
+                        h('div', {"className":"label"}, [
+                            "Column"
+                        ]),
+                        h('div', {"className":"value"}, [
+                            h('span', {"id":"val-col-temp","className":"skel"}, [
+                                "--"
+                            ])
+                        ]),
+                        h('svg', {"className":"temp-ring","viewBox":"0 0 34 34","id":"col-temp-ring"}, [
+                            h('circle', {"cx":"17","cy":"17","r":"14","fill":"none","stroke":"var(--divider)","stroke-width":"2.5"}),
+                            h('circle', {"cx":"17","cy":"17","r":"14","fill":"none","stroke":"var(--primary)","stroke-width":"2.5","stroke-dasharray":"88","stroke-dashoffset":"88","transform":"rotate(-90 17 17)","id":"col-temp-arc"})
+                        ])
+                    ]),
+                    h('div', {"className":"sensor-item","id":"tank-temp-card"}, [
+                        h('div', {"className":"label"}, [
+                            "Tank"
+                        ]),
+                        h('div', {"className":"value"}, [
+                            h('span', {"id":"val-tank-temp","className":"skel"}, [
+                                "--"
+                            ])
+                        ]),
+                        h('svg', {"className":"temp-ring","viewBox":"0 0 34 34","id":"tank-temp-ring"}, [
+                            h('circle', {"cx":"17","cy":"17","r":"14","fill":"none","stroke":"var(--divider)","stroke-width":"2.5"}),
+                            h('circle', {"cx":"17","cy":"17","r":"14","fill":"none","stroke":"var(--primary)","stroke-width":"2.5","stroke-dasharray":"88","stroke-dashoffset":"88","transform":"rotate(-90 17 17)","id":"tank-temp-arc"})
+                        ])
+                    ])
+                ])
+            ]);
+        }
+
+        function createColumnControlCard() {
+            return h('div', {"className":"card"}, [
+                h('div', {"className":"card-header"}, [
+                    h('h2', {"className":"card-title"}, [
+                        "Column Control"
+                    ])
+                ]),
+                h('div', {"className":"control-group"}, [
+                    h('div', {"className":"control-item full"}, [
+                        h('label', null, [
+                            "Target Temperature"
+                        ]),
+                        h('div', {"className":"input-row"}, [
+                            h('button', {"className":"btn btn-stepper","data-stepper":"in-target","data-step":"-0.1"}, [
+                                "−"
+                            ]),
+                            h('input', {"type":"number","id":"in-target","step":"0.01","min":"0","max":"100","value":"95.00"}),
+                            h('div', {"className":"slider-wrap"}, [
+                                h('input', {"type":"range","id":"in-target-slider","min":"0","max":"100","step":"0.01","value":"95.00"}),
+                                h('div', {"className":"ss-marker","style":"left:78.39%"}),
+                                h('div', {"className":"ss-label","style":"left:78.39%","data-target":"in-target","data-value":"78.39"}, [
+                                    "Spirit"
+                                ])
+                            ]),
+                            h('button', {"className":"btn btn-stepper","data-stepper":"in-target","data-step":"0.1"}, [
+                                "+"
+                            ]),
+                            h('div', {"className":"delta-inline"}, [
+                                h('span', {"className":"delta-label"}, [
+                                    "Δ"
+                                ]),
+                                h('input', {"type":"number","id":"in-delta","step":"0.01","min":"0","max":"5","value":"0.30"})
+                            ])
+                        ])
+                    ])
+                ]),
+                h('div', {"className":"control-item full","style":"margin-top:12px;"}, [
+                    h('label', null, [
+                        "Coef Otbora"
+                    ]),
+                    h('div', {"className":"input-row"}, [
+                        h('input', {"type":"number","id":"in-coef","step":"0.05","min":"0","max":"1","value":"1.0"}),
+                        h('input', {"type":"range","id":"in-coef-slider","min":"0","max":"1","step":"0.05","value":"1.0"})
+                    ])
+                ]),
+                h('div', {"style":"margin-top:8px;"}, [
+                    h('div', {"className":"switch-row","style":"padding:4px 0"}, [
+                        h('label', {"htmlFor":"sw-reduction"}, [
+                            "Use Reduction"
+                        ]),
+                        h('label', {"className":"switch"}, [
+                            h('input', {"type":"checkbox","id":"sw-reduction","checked":""}),
+                            h('span', {"className":"track"})
+                        ])
+                    ])
+                ])
+            ]);
+        }
+
+        function createValvesAndHeaterCard() {
+            return h('div', {"className":"card"}, [
+                h('div', {"className":"card-header"}, [
+                    h('h2', {"className":"card-title"}, [
+                        "Valves & Heater"
+                    ])
+                ]),
+                h('div', {"className":"control-group"}, [
+                    h('div', {"className":"control-item"}, [
+                        h('label', null, [
+                            "Valve High"
+                        ]),
+                        h('div', {"className":"input-row"}, [
+                            h('div', {"className":"number-wrap"}, [
+                                h('input', {"type":"number","id":"in-vh","className":"has-unit","step":"1","min":"0","max":"100","value":"0"}),
+                                h('span', {"className":"number-unit"}, [
+                                    "%"
+                                ])
+                            ]),
+                            h('div', {"className":"slider-wrap"}, [
+                                h('input', {"type":"range","id":"in-vh-slider","min":"0","max":"100","step":"1","value":"0"}),
+                                h('div', {"className":"ss-marker","style":"left:2%"}),
+                                h('div', {"className":"ss-label","style":"left:2%","data-target":"in-vh","data-value":"2"}, [
+                                    "Heads"
+                                ]),
+                                h('div', {"className":"ss-marker","style":"left:21.5%"}),
+                                h('div', {"className":"ss-label","style":"left:21.5%","data-target":"in-vh","data-value":"22"}, [
+                                    "Hearts"
+                                ])
+                            ])
+                        ])
+                    ]),
+                    h('div', {"className":"control-item"}, [
+                        h('label', null, [
+                            "Valve Low"
+                        ]),
+                        h('div', {"className":"input-row"}, [
+                            h('div', {"className":"number-wrap"}, [
+                                h('input', {"type":"number","id":"in-vl","className":"has-unit","step":"1","min":"0","max":"100","value":"0"}),
+                                h('span', {"className":"number-unit"}, [
+                                    "%"
+                                ])
+                            ]),
+                            h('div', {"className":"slider-wrap"}, [
+                                h('input', {"type":"range","id":"in-vl-slider","min":"0","max":"100","step":"1","value":"0"}),
+                                h('div', {"className":"ss-marker","style":"left:21.5%"}),
+                                h('div', {"className":"ss-label","style":"left:21.5%","data-target":"in-vl","data-value":"22"}, [
+                                    "Hearts"
+                                ])
+                            ])
+                        ])
+                    ]),
+                    h('div', {"className":"control-item full"}, [
+                        h('label', null, [
+                            "Heater Power"
+                        ]),
+                        h('div', {"className":"input-row"}, [
+                            h('div', {"className":"number-wrap"}, [
+                                h('input', {"type":"number","id":"in-heat","className":"has-unit","step":"10","min":"0","max":"2750","value":"0"}),
+                                h('span', {"className":"number-unit"}, [
+                                    "W"
+                                ])
+                            ]),
+                            h('div', {"className":"slider-wrap"}, [
+                                h('input', {"type":"range","id":"in-heat-slider","min":"0","max":"2750","step":"10","value":"0"}),
+                                h('div', {"className":"ss-marker","style":"left:57.3%"}),
+                                h('div', {"className":"ss-label","style":"left:57.3%","data-target":"in-heat","data-value":"1575"}, [
+                                    "Working Power"
+                                ]),
+                                h('div', {"className":"ss-marker","style":"left:100%"}),
+                                h('div', {"className":"ss-label","style":"left:100%;transform:translateX(-100%)","data-target":"in-heat","data-value":"2750"}, [
+                                    "Preheat"
+                                ])
+                            ])
+                        ])
+                    ]),
+                    h('div', {"className":"control-item full"}, [
+                        h('label', null, [
+                            "Max Tank Temp"
+                        ]),
+                        h('div', {"className":"input-row"}, [
+                            h('div', {"className":"number-wrap"}, [
+                                h('input', {"type":"number","id":"in-max-tank","className":"has-unit","step":"0.1","min":"0","max":"100","value":"99.0"}),
+                                h('span', {"className":"number-unit"}, [
+                                    "°C"
+                                ])
+                            ]),
+                            h('input', {"type":"range","id":"in-max-tank-slider","min":"0","max":"100","step":"0.1","value":"99.0"})
+                        ])
+                    ])
+                ]),
+                h('div', {"style":"margin-top:8px;"}, [
+                    h('div', {"className":"switch-row","style":"padding:4px 0"}, [
+                        h('label', {"htmlFor":"sw-disable-close"}, [
+                            "Disable Upper Valve Closing"
+                        ]),
+                        h('label', {"className":"switch"}, [
+                            h('input', {"type":"checkbox","id":"sw-disable-close"}),
+                            h('span', {"className":"track"})
+                        ])
+                    ])
+                ])
+            ]);
+        }
+
+        function createDiagnosticsCard() {
+            return h('div', {"className":"card","id":"diag-card","style":"position:relative;"}, [
+                h('div', {"className":"card-header","style":"margin-bottom:8px;cursor:pointer;","id":"diag-toggle"}, [
+                    h('h2', {"className":"card-title","style":"font-size:16px;"}, [
+                        "⚙ Diagnostics"
+                    ]),
+                    h('span', {"id":"diag-arrow","style":"color:var(--ink-muted);font-size:14px;"}, [
+                        "▸"
+                    ])
+                ]),
+                h('div', {"id":"diag-body","style":"display:none"}, [
+                    h('div', {"className":"sensor-grid","style":"grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;"}, [
+                        h('div', {"className":"sensor-item","style":"padding:8px;"}, [
+                            h('div', {"className":"label"}, [
+                                "Connection"
+                            ]),
+                            h('div', {"className":"value","style":"font-size:16px;","id":"val-diag-conn"}, [
+                                "--"
+                            ])
+                        ]),
+                        h('div', {"className":"sensor-item","style":"padding:8px;"}, [
+                            h('div', {"className":"label"}, [
+                                "Uptime"
+                            ]),
+                            h('div', {"className":"value","style":"font-size:16px;","id":"val-diag-uptime"}, [
+                                "--"
+                            ])
+                        ]),
+                        h('div', {"className":"sensor-item","style":"padding:8px;"}, [
+                            h('div', {"className":"label"}, [
+                                "WiFi Signal"
+                            ]),
+                            h('div', {"className":"value","style":"font-size:16px;","id":"val-diag-wifi"}, [
+                                "--"
+                            ])
+                        ]),
+                        h('div', {"className":"sensor-item","style":"padding:8px;"}, [
+                            h('div', {"className":"label"}, [
+                                "Free Heap"
+                            ]),
+                            h('div', {"className":"value","style":"font-size:16px;","id":"val-diag-heap"}, [
+                                "--"
+                            ])
+                        ]),
+                        h('div', {"className":"sensor-item","style":"padding:8px;"}, [
+                            h('div', {"className":"label"}, [
+                                "Loop Time"
+                            ]),
+                            h('div', {"className":"value","style":"font-size:16px;","id":"val-loop-time"}, [
+                                "--"
+                            ])
+                        ]),
+                        h('div', {"className":"sensor-item","style":"padding:8px;"}, [
+                            h('div', {"className":"label"}, [
+                                "Display"
+                            ]),
+                            h('div', {"className":"value","style":"font-size:16px;","id":"val-diag"}, [
+                                "--"
+                            ])
+                        ]),
+                        h('div', {"className":"sensor-item","style":"padding:8px;grid-column:1/-1;"}, [
+                            h('div', {"className":"label"}, [
+                                "Reset Reason"
+                            ]),
+                            h('div', {"className":"value","style":"font-size:14px;","id":"val-reset-log"}, [
+                                "--"
+                            ])
+                        ])
+                    ]),
+                    h('div', {"id":"log-area","style":"background:var(--input-bg);border-radius:var(--radius-sm);padding:8px;font-family:'Menlo','Monaco','Consolas',monospace;font-size:11px;line-height:1.6;color:var(--ink);max-height:200px;overflow-y:auto;border:1px solid var(--card-border);white-space:pre-wrap;"})
+                ])
+            ]);
+        }
+
         const children = [
-        h('div', {"className":"card"}, [
-            h('div', {"className":"top-bar"}, [
-                h('div', {"className":"top-bar-left"}, [
-                    h('div', {"className":"badge-row"}, [
-                        h('span', {"id":"conn-status","className":"badge badge-conn disconnected"}, [
-                            "Connecting..."
-                        ]),
-                        h('span', {"className":"badge badge-status","id":"val-msg"}, [
-                            "Connecting..."
-                        ]),
-                        h('span', {"id":"st-distilling","className":"badge"}, [
-                            "Distilling"
-                        ]),
-                        h('span', {"id":"st-heating","className":"badge"}, [
-                            "Heating"
-                        ]),
-                        h('span', {"id":"st-alarm","className":"badge"}, [
-                            "Alarm"
-                        ])
-                    ]),
-                    h('button', {"className":"btn btn-danger","id":"btn-restart","style":"display:none;padding:4px 12px;font-size:11px;"}, [
-                        "Restart"
-                    ])
-                ]),
-                h('div', {"className":"top-bar-right"}, [
-                    h('div', {"className":"vol-mini"}, [
-                        h('span', {"className":"vol-icon","id":"vol-icon"}, [
-                            "♫"
-                        ]),
-                        h('input', {"type":"range","id":"in-vol-slider","min":"0","max":"100","step":"1","value":"100"}),
-                        h('span', {"className":"vol-val","id":"vol-val"}, [
-                            "100"
-                        ]),
-                        h('input', {"type":"number","id":"in-vol","value":"100","style":"display:none;"})
-                    ]),
-                    h('button', {"className":"theme-toggle","id":"btn-theme","aria-label":"Toggle theme"}, [
-                        h('span', {"className":"icon"}, [
-                            "☾"
-                        ])
-                    ])
-                ])
-            ])
-        ]),
-        h('div', {"className":"card","style":"padding:16px"}, [
-            h('div', {"className":"card-header","style":"margin-bottom:12px"}, [
-                h('h2', {"className":"card-title"}, [
-                    "Temperatures"
-                ])
-            ]),
-            h('div', {"className":"sensor-grid"}, [
-                h('div', {"className":"sensor-item","id":"col-temp-card"}, [
-                    h('div', {"className":"label"}, [
-                        "Column"
-                    ]),
-                    h('div', {"className":"value"}, [
-                        h('span', {"id":"val-col-temp","className":"skel"}, [
-                            "--"
-                        ])
-                    ]),
-                    h('svg', {"className":"temp-ring","viewBox":"0 0 34 34","id":"col-temp-ring"}, [
-                        h('circle', {"cx":"17","cy":"17","r":"14","fill":"none","stroke":"var(--divider)","stroke-width":"2.5"}),
-                        h('circle', {"cx":"17","cy":"17","r":"14","fill":"none","stroke":"var(--primary)","stroke-width":"2.5","stroke-dasharray":"88","stroke-dashoffset":"88","transform":"rotate(-90 17 17)","id":"col-temp-arc"})
-                    ])
-                ]),
-                h('div', {"className":"sensor-item","id":"tank-temp-card"}, [
-                    h('div', {"className":"label"}, [
-                        "Tank"
-                    ]),
-                    h('div', {"className":"value"}, [
-                        h('span', {"id":"val-tank-temp","className":"skel"}, [
-                            "--"
-                        ])
-                    ]),
-                    h('svg', {"className":"temp-ring","viewBox":"0 0 34 34","id":"tank-temp-ring"}, [
-                        h('circle', {"cx":"17","cy":"17","r":"14","fill":"none","stroke":"var(--divider)","stroke-width":"2.5"}),
-                        h('circle', {"cx":"17","cy":"17","r":"14","fill":"none","stroke":"var(--primary)","stroke-width":"2.5","stroke-dasharray":"88","stroke-dashoffset":"88","transform":"rotate(-90 17 17)","id":"tank-temp-arc"})
-                    ])
-                ])
-            ])
-        ]),
-        h('div', {"className":"card"}, [
-            h('div', {"className":"card-header"}, [
-                h('h2', {"className":"card-title"}, [
-                    "Column Control"
-                ])
-            ]),
-            h('div', {"className":"control-group"}, [
-                h('div', {"className":"control-item full"}, [
-                    h('label', null, [
-                        "Target Temperature"
-                    ]),
-                    h('div', {"className":"input-row"}, [
-                        h('button', {"className":"btn btn-stepper","data-stepper":"in-target","data-step":"-0.1"}, [
-                            "−"
-                        ]),
-                        h('input', {"type":"number","id":"in-target","step":"0.01","min":"0","max":"100","value":"95.00"}),
-                        h('div', {"className":"slider-wrap"}, [
-                            h('input', {"type":"range","id":"in-target-slider","min":"0","max":"100","step":"0.01","value":"95.00"}),
-                            h('div', {"className":"ss-marker","style":"left:78.39%"}),
-                            h('div', {"className":"ss-label","style":"left:78.39%","data-target":"in-target","data-value":"78.39"}, [
-                                "Spirit"
-                            ])
-                        ]),
-                        h('button', {"className":"btn btn-stepper","data-stepper":"in-target","data-step":"0.1"}, [
-                            "+"
-                        ]),
-                        h('div', {"className":"delta-inline"}, [
-                            h('span', {"className":"delta-label"}, [
-                                "Δ"
-                            ]),
-                            h('input', {"type":"number","id":"in-delta","step":"0.01","min":"0","max":"5","value":"0.30"})
-                        ])
-                    ])
-                ])
-            ]),
-            h('div', {"className":"control-item full","style":"margin-top:12px;"}, [
-                h('label', null, [
-                    "Coef Otbora"
-                ]),
-                h('div', {"className":"input-row"}, [
-                    h('input', {"type":"number","id":"in-coef","step":"0.05","min":"0","max":"1","value":"1.0"}),
-                    h('input', {"type":"range","id":"in-coef-slider","min":"0","max":"1","step":"0.05","value":"1.0"})
-                ])
-            ]),
-            h('div', {"style":"margin-top:8px;"}, [
-                h('div', {"className":"switch-row","style":"padding:4px 0"}, [
-                    h('label', {"htmlFor":"sw-reduction"}, [
-                        "Use Reduction"
-                    ]),
-                    h('label', {"className":"switch"}, [
-                        h('input', {"type":"checkbox","id":"sw-reduction","checked":""}),
-                        h('span', {"className":"track"})
-                    ])
-                ])
-            ])
-        ]),
-        h('div', {"className":"card"}, [
-            h('div', {"className":"card-header"}, [
-                h('h2', {"className":"card-title"}, [
-                    "Valves & Heater"
-                ])
-            ]),
-            h('div', {"className":"control-group"}, [
-                h('div', {"className":"control-item"}, [
-                    h('label', null, [
-                        "Valve High"
-                    ]),
-                    h('div', {"className":"input-row"}, [
-                        h('div', {"className":"number-wrap"}, [
-                            h('input', {"type":"number","id":"in-vh","className":"has-unit","step":"1","min":"0","max":"100","value":"0"}),
-                            h('span', {"className":"number-unit"}, [
-                                "%"
-                            ])
-                        ]),
-                        h('div', {"className":"slider-wrap"}, [
-                            h('input', {"type":"range","id":"in-vh-slider","min":"0","max":"100","step":"1","value":"0"}),
-                            h('div', {"className":"ss-marker","style":"left:2%"}),
-                            h('div', {"className":"ss-label","style":"left:2%","data-target":"in-vh","data-value":"2"}, [
-                                "Heads"
-                            ]),
-                            h('div', {"className":"ss-marker","style":"left:21.5%"}),
-                            h('div', {"className":"ss-label","style":"left:21.5%","data-target":"in-vh","data-value":"22"}, [
-                                "Hearts"
-                            ])
-                        ])
-                    ])
-                ]),
-                h('div', {"className":"control-item"}, [
-                    h('label', null, [
-                        "Valve Low"
-                    ]),
-                    h('div', {"className":"input-row"}, [
-                        h('div', {"className":"number-wrap"}, [
-                            h('input', {"type":"number","id":"in-vl","className":"has-unit","step":"1","min":"0","max":"100","value":"0"}),
-                            h('span', {"className":"number-unit"}, [
-                                "%"
-                            ])
-                        ]),
-                        h('div', {"className":"slider-wrap"}, [
-                            h('input', {"type":"range","id":"in-vl-slider","min":"0","max":"100","step":"1","value":"0"}),
-                            h('div', {"className":"ss-marker","style":"left:21.5%"}),
-                            h('div', {"className":"ss-label","style":"left:21.5%","data-target":"in-vl","data-value":"22"}, [
-                                "Hearts"
-                            ])
-                        ])
-                    ])
-                ]),
-                h('div', {"className":"control-item full"}, [
-                    h('label', null, [
-                        "Heater Power"
-                    ]),
-                    h('div', {"className":"input-row"}, [
-                        h('div', {"className":"number-wrap"}, [
-                            h('input', {"type":"number","id":"in-heat","className":"has-unit","step":"10","min":"0","max":"2750","value":"0"}),
-                            h('span', {"className":"number-unit"}, [
-                                "W"
-                            ])
-                        ]),
-                        h('div', {"className":"slider-wrap"}, [
-                            h('input', {"type":"range","id":"in-heat-slider","min":"0","max":"2750","step":"10","value":"0"}),
-                            h('div', {"className":"ss-marker","style":"left:57.3%"}),
-                            h('div', {"className":"ss-label","style":"left:57.3%","data-target":"in-heat","data-value":"1575"}, [
-                                "Working Power"
-                            ]),
-                            h('div', {"className":"ss-marker","style":"left:100%"}),
-                            h('div', {"className":"ss-label","style":"left:100%;transform:translateX(-100%)","data-target":"in-heat","data-value":"2750"}, [
-                                "Preheat"
-                            ])
-                        ])
-                    ])
-                ]),
-                h('div', {"className":"control-item full"}, [
-                    h('label', null, [
-                        "Max Tank Temp"
-                    ]),
-                    h('div', {"className":"input-row"}, [
-                        h('div', {"className":"number-wrap"}, [
-                            h('input', {"type":"number","id":"in-max-tank","className":"has-unit","step":"0.1","min":"0","max":"100","value":"99.0"}),
-                            h('span', {"className":"number-unit"}, [
-                                "°C"
-                            ])
-                        ]),
-                        h('input', {"type":"range","id":"in-max-tank-slider","min":"0","max":"100","step":"0.1","value":"99.0"})
-                    ])
-                ])
-            ]),
-            h('div', {"style":"margin-top:8px;"}, [
-                h('div', {"className":"switch-row","style":"padding:4px 0"}, [
-                    h('label', {"htmlFor":"sw-disable-close"}, [
-                        "Disable Upper Valve Closing"
-                    ]),
-                    h('label', {"className":"switch"}, [
-                        h('input', {"type":"checkbox","id":"sw-disable-close"}),
-                        h('span', {"className":"track"})
-                    ])
-                ])
-            ])
-        ]),
-        h('div', {"className":"card","id":"diag-card","style":"position:relative;"}, [
-            h('div', {"className":"card-header","style":"margin-bottom:8px;cursor:pointer;","id":"diag-toggle"}, [
-                h('h2', {"className":"card-title","style":"font-size:16px;"}, [
-                    "⚙ Diagnostics"
-                ]),
-                h('span', {"id":"diag-arrow","style":"color:var(--ink-muted);font-size:14px;"}, [
-                    "▸"
-                ])
-            ]),
-            h('div', {"id":"diag-body","style":"display:none"}, [
-                h('div', {"className":"sensor-grid","style":"grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;"}, [
-                    h('div', {"className":"sensor-item","style":"padding:8px;"}, [
-                        h('div', {"className":"label"}, [
-                            "Connection"
-                        ]),
-                        h('div', {"className":"value","style":"font-size:16px;","id":"val-diag-conn"}, [
-                            "--"
-                        ])
-                    ]),
-                    h('div', {"className":"sensor-item","style":"padding:8px;"}, [
-                        h('div', {"className":"label"}, [
-                            "Uptime"
-                        ]),
-                        h('div', {"className":"value","style":"font-size:16px;","id":"val-diag-uptime"}, [
-                            "--"
-                        ])
-                    ]),
-                    h('div', {"className":"sensor-item","style":"padding:8px;"}, [
-                        h('div', {"className":"label"}, [
-                            "WiFi Signal"
-                        ]),
-                        h('div', {"className":"value","style":"font-size:16px;","id":"val-diag-wifi"}, [
-                            "--"
-                        ])
-                    ]),
-                    h('div', {"className":"sensor-item","style":"padding:8px;"}, [
-                        h('div', {"className":"label"}, [
-                            "Free Heap"
-                        ]),
-                        h('div', {"className":"value","style":"font-size:16px;","id":"val-diag-heap"}, [
-                            "--"
-                        ])
-                    ]),
-                    h('div', {"className":"sensor-item","style":"padding:8px;"}, [
-                        h('div', {"className":"label"}, [
-                            "Loop Time"
-                        ]),
-                        h('div', {"className":"value","style":"font-size:16px;","id":"val-loop-time"}, [
-                            "--"
-                        ])
-                    ]),
-                    h('div', {"className":"sensor-item","style":"padding:8px;"}, [
-                        h('div', {"className":"label"}, [
-                            "Display"
-                        ]),
-                        h('div', {"className":"value","style":"font-size:16px;","id":"val-diag"}, [
-                            "--"
-                        ])
-                    ]),
-                    h('div', {"className":"sensor-item","style":"padding:8px;grid-column:1/-1;"}, [
-                        h('div', {"className":"label"}, [
-                            "Reset Reason"
-                        ]),
-                        h('div', {"className":"value","style":"font-size:14px;","id":"val-reset-log"}, [
-                            "--"
-                        ])
-                    ])
-                ]),
-                h('div', {"id":"log-area","style":"background:var(--input-bg);border-radius:var(--radius-sm);padding:8px;font-family:'Menlo','Monaco','Consolas',monospace;font-size:11px;line-height:1.6;color:var(--ink);max-height:200px;overflow-y:auto;border:1px solid var(--card-border);white-space:pre-wrap;"})
-            ])
-        ])
+            createTopBarCard(),
+            createTemperaturesCard(),
+            createColumnControlCard(),
+            createValvesAndHeaterCard(),
+            createDiagnosticsCard()
         ];
         for (let i = 0; i < children.length; i++) {
             app.appendChild(children[i]);
