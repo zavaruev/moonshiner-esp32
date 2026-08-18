@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { parseState, readSensor, readTextSensor, readBinarySensor, setNumber, toggleSwitch, pressButton, getAllTemperatures, getAllStatus } from './esp32-api';
+import { getBase, parseState, readSensor, readTextSensor, readBinarySensor, setNumber, toggleSwitch, pressButton, getAllTemperatures, getAllStatus } from './esp32-api';
 
 describe('security validation for entity IDs', () => {
   const invalidIds = ['invalid/id', '../id', 'id?param=1', 'my-id-with-dashes', 'id!'];
@@ -350,5 +350,29 @@ describe('getAllStatus', () => {
     } as any);
 
     await expect(getAllStatus()).rejects.toThrow('HTTP 500 on /sensor/Column%20Temperature');
+  });
+});
+
+
+describe('getBase', () => {
+  const originalEnv = process.env.ESP32_URL;
+
+  afterEach(() => {
+    process.env.ESP32_URL = originalEnv;
+  });
+
+  it('should return protocol and host from a valid ESP32_URL', () => {
+    process.env.ESP32_URL = 'http://192.168.1.100';
+    expect(getBase()).toBe('http://192.168.1.100');
+  });
+
+  it('should strip path, query, and credentials from ESP32_URL', () => {
+    process.env.ESP32_URL = 'https://user:pass@example.local:8443/api/v1?token=123';
+    expect(getBase()).toBe('https://example.local:8443');
+  });
+
+  it('should throw an error when ESP32_URL is not set', () => {
+    delete process.env.ESP32_URL;
+    expect(() => getBase()).toThrow('ESP32_URL environment variable is not set. A secure URL must be provided.');
   });
 });
