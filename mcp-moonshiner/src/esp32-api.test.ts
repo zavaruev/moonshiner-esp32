@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { parseState, readSensor, readTextSensor, readBinarySensor, setNumber, toggleSwitch, pressButton, getAllTemperatures, getAllStatus } from './esp32-api';
+import { getAuth, parseState, readSensor, readTextSensor, readBinarySensor, setNumber, toggleSwitch, pressButton, getAllTemperatures, getAllStatus } from './esp32-api';
 
 describe('security validation for entity IDs', () => {
   const invalidIds = ['invalid/id', '../id', 'id?param=1', 'my-id-with-dashes', 'id!'];
@@ -350,5 +350,67 @@ describe('getAllStatus', () => {
     } as any);
 
     await expect(getAllStatus()).rejects.toThrow('HTTP 500 on /sensor/Column%20Temperature');
+  });
+});
+
+describe('getAuth', () => {
+  const originalUrl = process.env.ESP32_URL;
+  const originalUser = process.env.ESP32_USER;
+  const originalPass = process.env.ESP32_PASS;
+
+  beforeEach(() => {
+    delete process.env.ESP32_URL;
+    delete process.env.ESP32_USER;
+    delete process.env.ESP32_PASS;
+  });
+
+  afterEach(() => {
+    process.env.ESP32_URL = originalUrl;
+    process.env.ESP32_USER = originalUser;
+    process.env.ESP32_PASS = originalPass;
+  });
+
+  it('should throw an error if ESP32_URL is not set', () => {
+    expect(() => getAuth()).toThrow('ESP32_URL environment variable is not set. A secure URL must be provided.');
+  });
+
+  it('should return empty string if no user or password provided', () => {
+    process.env.ESP32_URL = 'http://example.local';
+    expect(getAuth()).toBe('');
+  });
+
+  it('should return base64 basic auth string if user and password provided via URL', () => {
+    process.env.ESP32_URL = 'http://admin:secret@example.local';
+    const expected = 'Basic ' + Buffer.from('admin:secret').toString('base64');
+    expect(getAuth()).toBe(expected);
+  });
+
+  it('should return base64 basic auth string if user and password provided via environment variables', () => {
+    process.env.ESP32_URL = 'http://example.local';
+    process.env.ESP32_USER = 'envuser';
+    process.env.ESP32_PASS = 'envpass';
+    const expected = 'Basic ' + Buffer.from('envuser:envpass').toString('base64');
+    expect(getAuth()).toBe(expected);
+  });
+
+  it('should prioritize URL credentials over environment variables', () => {
+    process.env.ESP32_URL = 'http://urluser:urlpass@example.local';
+    process.env.ESP32_USER = 'envuser';
+    process.env.ESP32_PASS = 'envpass';
+    const expected = 'Basic ' + Buffer.from('urluser:urlpass').toString('base64');
+    expect(getAuth()).toBe(expected);
+  });
+
+  it('should handle user provided without password in environment variables', () => {
+    process.env.ESP32_URL = 'http://example.local';
+    process.env.ESP32_USER = 'justuser';
+    const expected = 'Basic ' + Buffer.from('justuser:').toString('base64');
+    expect(getAuth()).toBe(expected);
+  });
+
+  it('should handle user provided without password in URL', () => {
+    process.env.ESP32_URL = 'http://urluser@example.local';
+    const expected = 'Basic ' + Buffer.from('urluser:').toString('base64');
+    expect(getAuth()).toBe(expected);
   });
 });
