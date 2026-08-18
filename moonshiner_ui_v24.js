@@ -1385,7 +1385,13 @@
             clearTimeout(connTimer);
             connTimer = setTimeout(() => { setConnected(false); }, 5000);
 
-            const data = JSON.parse(e.data);
+            let data;
+            try {
+                data = JSON.parse(e.data);
+            } catch (err) {
+                console.error('Failed to parse SSE data:', err);
+                return;
+            }
 
             if (!entities[data.id]) {
                 addLog('Unknown entity: ' + data.id + ' = ' + data.state);
