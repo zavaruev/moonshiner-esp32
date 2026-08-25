@@ -178,19 +178,37 @@ setTimeout(() => {
 
             window3.matchMedia = () => ({ matches: false });
             window3.EventSource = class {
-              addEventListener() {}
+              constructor() {
+                window3.mockEventSource = this;
+                this.listeners = {};
+              }
+              addEventListener(event, cb) {
+                this.listeners[event] = cb;
+              }
               onerror() {}
             };
 
-            // Mock sessionStorage to throw error
             let getItemCalled = false;
+            let setItemCalled = false;
+            let warnCalled = false;
+
+            const originalWarn = window3.console.warn;
+            window3.console.warn = function(msg) {
+                if (msg && msg.includes('Error saving to sessionStorage')) warnCalled = true;
+                if (originalWarn) originalWarn.apply(this, arguments);
+            };
+
+            // Mock sessionStorage to throw error
             Object.defineProperty(window3, 'sessionStorage', {
               value: {
                 getItem: function() {
                   getItemCalled = true;
                   throw new Error('sessionStorage access denied');
                 },
-                setItem: function() {}
+                setItem: function() {
+                  setItemCalled = true;
+                  throw new Error('sessionStorage access denied');
+                }
               },
               writable: true
             });
@@ -203,7 +221,30 @@ setTimeout(() => {
             setTimeout(() => {
                 if (getItemCalled) {
                     console.log("SECURE: restoreSession handled sessionStorage error without crashing!");
-                    runThemeTests();
+
+                    // Trigger SSE to test setItem
+                    if (window3.mockEventSource && window3.mockEventSource.listeners && window3.mockEventSource.listeners['state']) {
+                        window3.mockEventSource.listeners['state']({
+                            data: JSON.stringify({ id: 'text_sensor-status_message', state: 'DONE' })
+                        });
+
+                        if (setItemCalled) {
+                            console.log("SECURE: SSE handler handled sessionStorage.setItem error without crashing!");
+                            if (warnCalled) {
+                                console.log("SECURE: console.warn was called appropriately!");
+                                runThemeTests();
+                            } else {
+                                console.error("FAIL: console.warn was not called for setItem error");
+                                process.exit(1);
+                            }
+                        } else {
+                            console.error("FAIL: sessionStorage.setItem was not called during SSE event");
+                            process.exit(1);
+                        }
+                    } else {
+                        console.error("FAIL: EventSource state listener not found");
+                        process.exit(1);
+                    }
                 } else {
                     console.error("FAIL: sessionStorage.getItem was not called during initialization");
                     process.exit(1);
