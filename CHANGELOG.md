@@ -1,5 +1,41 @@
 # Moonshiner ESP32 - Changelog
 
+## 2026-08-25: Merged 16 PRs (#87–#102) + local WIP, v1.07 - STABLE ✅
+
+### Merged PRs (all reviewed; conflicts resolved during integration)
+- **Perf**: cached diagnostics DOM lookups in SSE handler [#88]; cached step-decimal length at init (~41% CPU on that path) [#94]; cached conn-badge lookups in `setConnected` [#99]
+- **Security**: per-segment `encodeURIComponent` for API paths + values [#91→superseded by #97]; `# nosec` marker on `!secret` line (scanner false positive) [#102]
+- **Refactor**: `createTopBarCard` split into `createBadgeRow`/`createTopBarLeft`/`createTopBarRight` [#90]
+- **Code health**: silent SSE JSON parse failure (removed `console.error`) [#89]; silent MCP `parseState` failure [#92]; silent `sessionStorage.setItem` failure [#87]
+- **Tests**: SSE sessionStorage error [#93]; addLog buffer limits [#95]; standalone SSE parse-error test (aligned with #89) [#96]; updateTempVisuals into tests.js [#98]; setConnected into tests.js [#100]; test_addLog.js suite + npm test script [#101]
+
+### Integration fixes (not in any PR)
+- #91 vs #97 same-line conflict — kept #97 superset; #91 closed by GitHub (comment left)
+- tests.js exit-chain rebuilt: theme → setConnected → tempVisuals (#98+#100 both rewired it)
+- test_sse_error.js rewritten to assert *silent* handling (original asserted console.error removed by #89)
+- npm test script fixed after #100 deleted `test_setConnected.js`
+- MCP dist rebuilt from src (PR #94 had patched dist directly, contradicting #92)
+
+### Bug fix in local WIP (batched MCP status reads)
+- `runBatched` received eagerly-created promises → later-batch rejections fired as unhandled and requests were not actually throttled; rewritten to lazy task factories (true concurrency limit of 2, order-preserving)
+
+### Included local WIP (approved for deploy)
+- yaml: `sram1_as_iram: true` (esp-idf advanced)
+- UI: button entities (`button-refresh_ui`, `button-restart_process`) added to entity map
+- MCP: `'Connection': 'close'` headers on fetch/POST
+- Tooling: `esp32_logs.sh` wrapper committed (stale-log sweep + in-container timeout); `.playwright-mcp/` gitignored
+
+### Documentation
+- Detailed English comments added across all merged changes (top-bar builders, step caching, URL encoding, cached DOM refs, silent-failure contracts, `nosec` rationale)
+
+### Deploy notes
+- Tests green: `node tests.js` (7 suites chained), `test_addLog.js` 12/12, `test_sse_error.js`, vitest 75/75 with **0 unhandled rejections**
+- Compile: RAM 27.3%, Flash 52.9%; OTA upload OK; verified old warn-string absent from binary & served UI
+- Device verified: clean logs over 60 s (no `[E]`, no sensor glitches), heap stable ~239 KB, REST/SSE/MCP all responding
+- Note: device was offline during first flash attempt (power) — full subnet scan confirmed, retried successfully after power-on
+
+---
+
 ## 2026-08-12: Merged 13 PRs from Jules (perf/security/tests) - STABLE ✅
 
 - **Security**: replaced remaining `innerHTML` with `textContent` (log render + val-diag-conn) [#76]; truncated raw JSON in MCP parseState error logs (sensitive data exposure) [#70]; strict types instead of `any` in MCP tests [#69]
