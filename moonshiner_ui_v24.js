@@ -1355,6 +1355,11 @@
         const colTempArc = document.getElementById('col-temp-arc');
         const tankTempArc = document.getElementById('tank-temp-arc');
 
+        const diagResetLog = document.getElementById('val-reset-log');
+        const diagUptime = document.getElementById('val-diag-uptime');
+        const diagWifi = document.getElementById('val-diag-wifi');
+        const diagHeap = document.getElementById('val-diag-heap');
+
         function updateTempVisuals(sensorId, tempC) {
             const isCol = sensorId === 'sensor-column_temperature';
             const card = isCol ? colTempCard : tankTempCard;
@@ -1452,20 +1457,16 @@
                 // Mirror to diagnostics card (runs even if old header element is gone)
                 const _dt = cfg.fmt ? cfg.fmt(data.state) : data.state;
                 if (data.id === 'text_sensor-reset_reason') {
-                    const _rl = document.getElementById('val-reset-log');
-                    if (_rl) _rl.textContent = String(data.state);
+                    if (diagResetLog) diagResetLog.textContent = String(data.state);
                 }
                 if (data.id === 'sensor-uptime') {
-                    const _du = document.getElementById('val-diag-uptime');
-                    if (_du) _du.textContent = _dt;
+                    if (diagUptime) diagUptime.textContent = _dt;
                 }
                 if (data.id === 'sensor-wifi_signal') {
-                    const _dw = document.getElementById('val-diag-wifi');
-                    if (_dw) _dw.textContent = _dt;
+                    if (diagWifi) diagWifi.textContent = _dt;
                 }
                 if (data.id === 'sensor-free_heap') {
-                    const _dh = document.getElementById('val-diag-heap');
-                    if (_dh) _dh.textContent = _dt;
+                    if (diagHeap) diagHeap.textContent = _dt;
                 }
             }
 
