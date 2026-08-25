@@ -1517,6 +1517,11 @@
             const cfg = entities[data.id];
 
             // Save to sessionStorage for fast restore on refresh
+            // Persist the latest state so a page refresh can restore values
+            // instantly (see restoreSession). Storage can legitimately fail
+            // (quota exceeded, strict privacy mode) - PR #87 made this path
+            // fully silent: losing the cache is harmless, crashing or spamming
+            // the console is not.
             try { sessionStorage.setItem('ms_' + data.id, String(data.state)); } catch (e) { }
 
             if (cfg.el) {

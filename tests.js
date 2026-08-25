@@ -223,6 +223,12 @@ setTimeout(() => {
                 if (originalWarn) originalWarn.apply(this, arguments);
             };
 
+            // PR #87 removed the console.warn from the sessionStorage.setItem
+            // catch-block on purpose: storage failures (quota, strict privacy
+            // mode) are expected and must be handled silently. The assertion
+            // below therefore requires the OPPOSITE of the original test:
+            // the failure path must stay quiet.
+
             // Mock sessionStorage to throw error
             Object.defineProperty(window3, 'sessionStorage', {
               value: {
@@ -255,11 +261,11 @@ setTimeout(() => {
 
                         if (setItemCalled) {
                             console.log("SECURE: SSE handler handled sessionStorage.setItem error without crashing!");
-                            if (warnCalled) {
-                                console.log("SECURE: console.warn was called appropriately!");
+                            if (!warnCalled) {
+                                console.log("SECURE: setItem failure handled silently (no console.warn), as intended by PR #87!");
                                 runThemeTests();
                             } else {
-                                console.error("FAIL: console.warn was not called for setItem error");
+                                console.error("FAIL: console.warn was called for setItem error - should be silent per PR #87");
                                 process.exit(1);
                             }
                         } else {
