@@ -1146,7 +1146,13 @@
         Object.keys(entities).forEach(function(id) {
             const cfg = entities[id];
             if (cfg.el) cfg._el = document.getElementById(cfg.el);
-            if (cfg.in) cfg._in = document.getElementById(cfg.in);
+            if (cfg.in) {
+                cfg._in = document.getElementById(cfg.in);
+                if (cfg._in) {
+                    const stepVal = parseFloat(cfg._in.getAttribute('step') || '1');
+                    cfg._d = stepVal > 0 && stepVal < 1 ? stepVal.toString().split('.')[1].length : 0;
+                }
+            }
             if (cfg.sl) cfg._sl = document.getElementById(cfg.sl);
             if (cfg.sw) cfg._sw = document.getElementById(cfg.sw);
             if (cfg.st) cfg._st = document.getElementById(cfg.st);
@@ -1481,8 +1487,7 @@
                         let numVal = parseFloat(numericValue);
                         if (!isNaN(numVal)) {
                             if (cfg.pct) numVal = Math.round(numVal * 100 / 1023);
-                            const stepVal = parseFloat(input.getAttribute('step') || '1');
-                            const d = stepVal > 0 && stepVal < 1 ? stepVal.toString().split('.')[1].length : 0;
+                            const d = cfg._d || 0;
                             const displayVal = numVal.toFixed(d);
                             input.value = displayVal;
                             if (cfg.sl) {
