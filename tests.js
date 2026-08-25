@@ -357,6 +357,97 @@ setTimeout(() => {
     }
 
     // Everything passed
+    runTempVisualsTests();
+}, 500);
+}
+
+
+// === Test 4: updateTempVisuals Coverage ===
+function runTempVisualsTests() {
+console.log("\nStarting Test 4: updateTempVisuals");
+
+const dom4 = new JSDOM('<!DOCTYPE html><html><body>' +
+  '<div id="col-temp-card"></div>' +
+  '<div id="tank-temp-card"></div>' +
+  '<svg><circle id="col-temp-arc"></circle></svg>' +
+  '<svg><circle id="tank-temp-arc"></circle></svg>' +
+  '</body></html>', {
+  runScripts: 'dangerously',
+  url: "http://localhost/"
+});
+const window4 = dom4.window;
+const document4 = window4.document;
+
+window4.matchMedia = () => ({ matches: false });
+window4.EventSource = class {
+  addEventListener() {}
+  onerror() {}
+};
+
+let jsCode4 = fs.readFileSync('./moonshiner_ui_v24.js', 'utf8');
+jsCode4 = jsCode4.replace('function updateTempVisuals(sensorId, tempC) {', 'window.updateTempVisuals = function(sensorId, tempC) {');
+
+const scriptEl4 = document4.createElement('script');
+scriptEl4.textContent = jsCode4;
+document4.body.appendChild(scriptEl4);
+
+setTimeout(() => {
+    let test4Failed = false;
+    try {
+        if (!window4.updateTempVisuals) {
+            throw new Error("updateTempVisuals is not exposed!");
+        }
+
+        // Test cold temp
+        window4.updateTempVisuals('sensor-column_temperature', 50);
+        const colCard = document4.getElementById('col-temp-card');
+        const colArc = document4.getElementById('col-temp-arc');
+        assert.strictEqual(colCard.classList.contains('temp-cold'), true, 'cold temp should add temp-cold');
+        assert.strictEqual(colArc.getAttribute('stroke'), 'var(--primary)', 'cold temp should set primary stroke');
+
+        // Test warm temp
+        window4.updateTempVisuals('sensor-column_temperature', 70);
+        assert.strictEqual(colCard.classList.contains('temp-warm'), true, 'warm temp should add temp-warm');
+        assert.strictEqual(colCard.classList.contains('temp-cold'), false, 'warm temp should remove temp-cold');
+        assert.strictEqual(colArc.getAttribute('stroke'), 'var(--warn)', 'warm temp should set warn stroke');
+
+        // Test hot temp & dash offset calculation
+        window4.updateTempVisuals('sensor-tank_temperature', 90);
+        const tankCard = document4.getElementById('tank-temp-card');
+        const tankArc = document4.getElementById('tank-temp-arc');
+        assert.strictEqual(tankCard.classList.contains('temp-hot'), true, 'hot temp should add temp-hot');
+        assert.strictEqual(tankArc.getAttribute('stroke'), 'var(--danger)', 'hot temp should set danger stroke');
+        // offset = 88 - (90-20)/80 * 88 = 88 - 0.875 * 88 = 11
+        assert.strictEqual(tankArc.getAttribute('stroke-dashoffset'), '11', 'hot temp should calculate offset correctly');
+
+        // Test missing arc element doesn't crash
+        // we can temporarily remove the arc and test
+        tankArc.remove();
+        assert.doesNotThrow(() => {
+            window4.updateTempVisuals('sensor-tank_temperature', 60);
+        }, 'missing arc should not throw');
+
+        // Test missing card element doesn't crash
+        assert.doesNotThrow(() => {
+            window4.updateTempVisuals('sensor-unknown', 60);
+        }, 'missing card should not throw');
+
+        // Test null temp doesn't crash
+        assert.doesNotThrow(() => {
+            window4.updateTempVisuals('sensor-column_temperature', null);
+        }, 'null temp should not throw');
+
+        console.log("✅ updateTempVisuals tests passed!");
+    } catch (err) {
+        console.error("❌ updateTempVisuals tests failed:", err);
+        test4Failed = true;
+    }
+
+    if (test4Failed) {
+        process.exit(1);
+    }
+
+    // Everything passed
     process.exit(0);
 }, 500);
 }
