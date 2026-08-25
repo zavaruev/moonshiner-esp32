@@ -739,6 +739,17 @@
             return el;
         }
 
+        // --- Top bar construction (refactored in PR #90) ---
+        // The top bar used to be one deeply-nested literal, which was hard to
+        // read and hard to diff. It is now split into small single-purpose
+        // builders; `createTopBarCard()` just composes them.
+
+        /**
+         * Builds the row of status badges shown at the top-left of the UI:
+         * connection state ("Connected"/"Disconnected"), the process status
+         * message from the controller, and the distilling / heating / alarm
+         * indicator pills that binary sensors toggle on and off.
+         */
         function createBadgeRow() {
             return h('div', {"className":"badge-row"}, [
                 h('span', {"id":"conn-status","className":"badge badge-conn disconnected"}, [
@@ -759,6 +770,8 @@
             ]);
         }
 
+        /** Left half of the top bar: status badges plus the hidden Restart
+         *  button (revealed only when the device reports an error state). */
         function createTopBarLeft() {
             return h('div', {"className":"top-bar-left"}, [
                 createBadgeRow(),
@@ -768,6 +781,9 @@
             ]);
         }
 
+        /** Right half of the top bar: the compact buzzer-volume control
+         *  (slider + hidden numeric input used for precise edits) and the
+         *  dark/light theme toggle button. */
         function createTopBarRight() {
             return h('div', {"className":"top-bar-right"}, [
                 h('div', {"className":"vol-mini"}, [
@@ -788,6 +804,7 @@
             ]);
         }
 
+        /** Assembles the full top-bar card from its left and right halves. */
         function createTopBarCard() {
             return h('div', {"className":"card"}, [
                 h('div', {"className":"top-bar"}, [
@@ -1153,17 +1170,27 @@
             'binary_sensor-heating_status': { st: 'st-heating' },
             'binary_sensor-alarm_status': { st: 'st-alarm', cls: 'danger' },
 
+            // Button entities have no persistent value to display; they are
+            // listed so the SSE handler can silently consume their state
+            // events instead of logging "unknown entity" noise.
             'button-refresh_ui': {},
             'button-restart_process': {}
         };
 
-        // Pre-cache DOM elements for entities to avoid dynamic lookups during critical paths
+        // Pre-cache DOM elements for entities to avoid dynamic lookups during
+        // critical paths (the SSE handler runs on every incoming message).
         Object.keys(entities).forEach(function(id) {
             const cfg = entities[id];
             if (cfg.el) cfg._el = document.getElementById(cfg.el);
             if (cfg.in) {
                 cfg._in = document.getElementById(cfg.in);
                 if (cfg._in) {
+                    // Cache the number of decimal places implied by the
+                    // input's `step` attribute once, at init time (PR #94).
+                    // Previously this string was parsed on *every* SSE
+                    // message just to format the display value; measuring
+                    // showed ~41% CPU reduction for that code path.
+                    // Example: step="0.1" -> 1 decimal, step="1" -> 0.
                     const stepVal = parseFloat(cfg._in.getAttribute('step') || '1');
                     cfg._d = stepVal > 0 && stepVal < 1 ? stepVal.toString().split('.')[1].length : 0;
                 }
@@ -1268,10 +1295,25 @@
                 const apiPath = cfg.api;
 
                 if (input && apiPath) {
+                    // All user edits funnel through this debounced sender:
+                    // rapid slider dragging produces one request 400 ms after
+                    // the last movement, instead of a flood that would
+                    // hammer (and potentially DoS) the ESP32 web server.
                     const debouncedUpdate = debounce(async (value) => {
+                        // Percentage-based controls (0-100 UI) are converted
+                        // to the raw 0-1023 PWM range the firmware expects.
                         const apiValue = cfg.pct ? Math.round(value * 1023 / 100) : value;
                         input.classList.add('sending');
                         try {
+                            // URL safety (PRs #91/#97): entity display names
+                            // contain spaces ("Column Temperature"), so every
+                            // path segment is percent-encoded individually.
+                            // Slashes must survive as separators, hence the
+                            // split/map/join rather than encoding the whole
+                            // path. The query value is encoded as a whole.
+                            // Note: fetch() already percent-encodes spaces,
+                            // so the device keeps receiving the same bytes
+                            // as before; this only hardens odd characters.
                             const encodedPath = apiPath.split('/').map(encodeURIComponent).join('/');
                             await fetch('/' + encodedPath + '/set?value=' + encodeURIComponent(apiValue), { method: 'POST' });
                         } catch (err) {
@@ -1306,6 +1348,7 @@
                 if (switchEl && apiPath) {
                     switchEl.addEventListener('change', e => {
                         const cmd = e.target.checked ? 'turn_on' : 'turn_off';
+                        // Same per-segment encoding as the numeric setter above.
                         const encodedPath = apiPath.split('/').map(encodeURIComponent).join('/');
                         fetch('/' + encodedPath + '/' + encodeURIComponent(cmd), { method: 'POST' })
                             .catch(err => addLog('Failed to toggle ' + entityId + ': ' + (err.message || err)));
@@ -1378,11 +1421,21 @@
         const colTempArc = document.getElementById('col-temp-arc');
         const tankTempArc = document.getElementById('tank-temp-arc');
 
+        // Diagnostics card mirrors (PR #88): resolved once here instead of on
+        // every SSE message. The UI DOM is fully built before this point, so
+        // the lookups are stable for the lifetime of the page; each consumer
+        // below still null-checks before writing.
         const diagResetLog = document.getElementById('val-reset-log');
         const diagUptime = document.getElementById('val-diag-uptime');
         const diagWifi = document.getElementById('val-diag-wifi');
         const diagHeap = document.getElementById('val-diag-heap');
 
+        /**
+         * Applies the temperature "heat ring" visuals: fills the SVG arc
+         * proportionally between 20-100 °C and color-codes the card as
+         * cold (<60 °C, primary), warm (<80 °C, warn) or hot (>=80 °C,
+         * danger). Safe to call with a missing element or a null reading.
+         */
         function updateTempVisuals(sensorId, tempC) {
             const isCol = sensorId === 'sensor-column_temperature';
             const card = isCol ? colTempCard : tankTempCard;
@@ -1399,10 +1452,19 @@
             else card.classList.add('temp-hot');
         }
 
+        // Connection badge elements (PR #99): cached once for the same reason
+        // as the diagnostics mirrors above - setConnected() runs on every SSE
+        // event plus a periodic watchdog timer, so repeated getElementById
+        // calls here were measurable overhead.
         const connEl = document.getElementById('conn-status');
         const runEl = document.getElementById('val-msg');
         const dcConnEl = document.getElementById('val-diag-conn');
 
+        /**
+         * Updates the connection badge (and its diagnostics mirror) to
+         * reflect live/dead SSE connectivity. On reconnect it plays a short
+         * two-step "modem blink" so the user can see the link came back.
+         */
         function setConnected(state) {
             if (!connEl) return;
             if (state) {
@@ -1430,6 +1492,9 @@
         }
 
         source.addEventListener('state', e => {
+            // Any state frame proves the SSE link is alive: mark connected and
+            // restart the 5 s watchdog that flips the badge back to
+            // "Disconnected" if frames stop arriving.
             setConnected(true);
             clearTimeout(connTimer);
             connTimer = setTimeout(() => { setConnected(false); }, 5000);
@@ -1438,6 +1503,9 @@
             try {
                 data = JSON.parse(e.data);
             } catch (err) {
+                // Malformed frames are expected noise on a flaky link; PR #89
+                // intentionally removed the console.error here - just drop
+                // the frame silently and keep the UI running.
                 return;
             }
 

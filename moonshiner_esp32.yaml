@@ -62,6 +62,9 @@ logger:
 api:
   reboot_timeout: 0s
   encryption:
+    # "!secret" injects the key from gitignored secrets.yaml at build time -
+    # nothing is hardcoded. "# nosec" tells security scanners (e.g. bandit)
+    # to skip this line; it is a false positive, not an embedded credential.
     key: !secret api_encryption_key # nosec
 
 debug:
