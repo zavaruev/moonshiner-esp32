@@ -7,5 +7,8 @@
     "@babel/preset-env": "^8.0.2",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1"
+  },
+  "scripts": {
+    "test": "node test_addLog.js && node tests.js && node test_setConnected.js"
   }
 }
