@@ -1396,9 +1396,11 @@
             else card.classList.add('temp-hot');
         }
 
+        const connEl = document.getElementById('conn-status');
+        const runEl = document.getElementById('val-msg');
+        const dcConnEl = document.getElementById('val-diag-conn');
+
         function setConnected(state) {
-            const connEl = document.getElementById('conn-status');
-            const runEl = document.getElementById('val-msg');
             if (!connEl) return;
             if (state) {
                 connEl.textContent = 'Connected';
@@ -1421,8 +1423,7 @@
                 connEl.style.opacity = '1';
                 if (runEl) runEl.style.opacity = '';
             }
-            const dc = document.getElementById('val-diag-conn');
-            if (dc) dc.textContent = state ? 'Connected' : 'Disconnected';
+            if (dcConnEl) dcConnEl.textContent = state ? 'Connected' : 'Disconnected';
         }
 
         source.addEventListener('state', e => {
