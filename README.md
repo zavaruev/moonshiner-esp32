@@ -20,7 +20,7 @@ ESPHome-based distillation controller for reflux and pot stills. Runs on an ESP3
 | Component | Specification |
 |-----------|--------------|
 | Board | ESP32 DevKit (esp32dev) |
-| Framework | ESP-IDF 5.5.0 |
+| Framework | ESP-IDF 5.5.5 |
 | Column Sensor | DS18B20 (12-bit, address `0x043C01F096B22428`) |
 | Tank Sensor | DS18B20 (12-bit, address `0xBF14D0231E64FF28`) |
 | Display | SH1106 128x64 OLED, I2C (sold as "SSD1306") |
@@ -82,11 +82,50 @@ wifi_ssid: "..."
 wifi_password: "..."
 ap_password: "..."
 ota_password: "..."
+api_encryption_key: "..."   # native API encryption
+web_username: "..."         # web_server basic auth
+web_password: "..."
 ```
 
 ### ESPHome Version
 
-Built with ESPHome `2025.11.2`. The JS frontend (`moonshiner_ui_v24.js`) is embedded in the firmware binary at compile time — any change requires a full recompile.
+Built with ESPHome `2026.8.x` (Docker `esphome/esphome:latest`). The JS frontend (`moonshiner_ui_v24.js`) is embedded in the firmware binary at compile time — any change requires a full recompile.
+
+## Testing
+
+The repo ships a self-contained JSDOM test suite (no jest needed for UI tests):
+
+```bash
+npm install        # once, for jsdom
+npm test           # = node tests.js && node test_addLog.js && node test_sse_error.js
+```
+
+- **tests.js** — chained suites: initUI double-call safety, addLog buffer limits (MAX_LOG=20), fetch error handling, sessionStorage failure handling (silent per PR #87), theme application, setConnected states, updateTempVisuals heat rings
+- **test_addLog.js** — XSS escaping, ring-buffer limit, missing-element resilience
+- **test_sse_error.js** — malformed SSE payloads must be dropped silently (no throw, no console.error)
+
+MCP server has its own vitest suite:
+
+```bash
+cd mcp-moonshiner && npm install && npm test    # 75 tests
+```
+
+## MCP Server
+
+`mcp-moonshiner/` — a TypeScript MCP server (stdio) exposing 14 tools to control/inspect the still from LLM agents. Talks to the ESP32 web_server v3 REST API with HTTP Basic Auth; entity lookups use display names (`sensor/Column Temperature`) since web_server v3 ≥ 2026.7.4. Rebuild after edits: `cd mcp-moonshiner && npm run build`.
+
+## Repository Layout
+
+```
+moonshiner_esp32.yaml   # the single ESPHome config (esp-idf framework)
+moonshiner_ui_v24.js    # custom frontend, embedded at compile time
+secrets.yaml            # gitignored, see list above
+mcp-moonshiner/         # MCP server (TypeScript)
+tests.js / test_*.js    # JSDOM UI test suites
+esp32_logs.sh           # safe log viewer wrapper (sweeps stale log sessions)
+AGENTS.md               # conventions and gotchas for coding agents
+CHANGELOG.md            # release history (latest: v1.07)
+```
 
 ## Deployment
 
@@ -113,7 +152,7 @@ docker exec esphome esphome upload moonshiner_esp32.yaml --device <ESP32_IP>
 ## Rollback
 
 ```bash
-git checkout <tag>
+git checkout v1.07        # or any earlier tag (see `git tag -l`)
 # sync files to build server
 rsync -av moonshiner_esp32.yaml moonshiner_ui_v24.js user@server:/path/to/config/
 # build and upload

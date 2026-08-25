@@ -12,9 +12,20 @@ opencode.json             # MCP config with http://admin:moonshine@... URL
 CHANGELOG.md / AGENTS.md / IMPROVEMENTS.md
 ```
 
-- **ESPHome version**: `2026.7.4` (Docker container `esphome/esphome:latest`)
+- **ESPHome version**: `2026.8.1` (Docker container `esphome/esphome:latest`, verified 2026-08-25; check `esphome version` in container if unsure)
 - **Board**: ESP32 dev (esp32dev)
-- **Framework**: **esp-idf** (v5.5.5 — recommended by 2026.7.4; if ESPHome raises the default, update the version in the yaml)
+- **Framework**: **esp-idf** (v5.5.5; if ESPHome raises the default, update the version in the yaml)
+
+## Testing
+
+```bash
+npm test                                   # UI suites: tests.js + test_addLog.js + test_sse_error.js
+cd mcp-moonshiner && npm test              # vitest, 75 tests
+```
+
+- `tests.js` chains 7 suites and exits non-zero on any failure
+- Silent-failure contract: SSE parse errors, sessionStorage write errors and MCP `parseState` failures must be handled **without console logging** (PRs #87/#89/#92) — tests enforce this; do not reintroduce `console.error/warn` there
+- MCP `runBatched` takes lazy task factories (`() => Promise`), not promises — eager promises break throttling and cause unhandled rejections
 
 ## Required secrets (`secrets.yaml`)
 
