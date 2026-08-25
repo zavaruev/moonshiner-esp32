@@ -7,6 +7,8 @@ let jsCode = fs.readFileSync('./moonshiner_ui_v24.js', 'utf8');
 jsCode = jsCode.replace('function addLog(msg) {', 'window.addLog = function(msg) {');
 // Expose initUI to the global window object to test multiple calls
 jsCode = jsCode.replace('function initUI() {', 'window.initUI = initUI;\n    function initUI() {');
+// Expose logBuffer
+jsCode = jsCode.replace('let logBuffer = [];', 'window.logBuffer = []; let logBuffer = window.logBuffer;');
 
 const dom = new JSDOM('<!DOCTYPE html><html><head></head><body></body></html>', {
   runScripts: 'dangerously',
@@ -74,7 +76,30 @@ setTimeout(() => {
         initUIFailed = true;
     }
 
-    if (xssFailed || initUIFailed) {
+
+    // --- New Test for addLog buffer limits ---
+    let addLogFailed = false;
+    try {
+        console.log('\nRunning addLog buffer limits test...');
+
+        // Add more than 20 logs
+        for (let i = 0; i < 25; i++) {
+            window.addLog('Buffer Test ' + i);
+        }
+
+        const logAreaBufferTest = document.getElementById('log-area');
+
+        assert.strictEqual(window.logBuffer.length, 20, 'logBuffer should have exactly 20 items');
+        assert.strictEqual(logAreaBufferTest.children.length, 20, 'logArea should have exactly 20 children');
+
+        console.log('✅ addLog buffer limits test passed');
+    } catch (err) {
+        console.error('❌ addLog buffer limits test failed:', err.message);
+        addLogFailed = true;
+    }
+
+    if (xssFailed || initUIFailed || addLogFailed) {
+
         process.exit(1);
     }
     console.log("Test 1 passed!");
