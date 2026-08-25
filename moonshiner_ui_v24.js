@@ -1251,7 +1251,8 @@
                         const apiValue = cfg.pct ? Math.round(value * 1023 / 100) : value;
                         input.classList.add('sending');
                         try {
-                            await fetch('/' + apiPath + '/set?value=' + apiValue, { method: 'POST' });
+                            const encodedPath = apiPath.split('/').map(encodeURIComponent).join('/');
+                            await fetch('/' + encodedPath + '/set?value=' + encodeURIComponent(apiValue), { method: 'POST' });
                         } catch (err) {
                             addLog('Failed to update ' + entityId + ': ' + (err.message || err));
                         } finally {
@@ -1284,7 +1285,8 @@
                 if (switchEl && apiPath) {
                     switchEl.addEventListener('change', e => {
                         const cmd = e.target.checked ? 'turn_on' : 'turn_off';
-                        fetch('/' + apiPath + '/' + cmd, { method: 'POST' })
+                        const encodedPath = apiPath.split('/').map(encodeURIComponent).join('/');
+                        fetch('/' + encodedPath + '/' + encodeURIComponent(cmd), { method: 'POST' })
                             .catch(err => addLog('Failed to toggle ' + entityId + ': ' + (err.message || err)));
                     });
                 }
