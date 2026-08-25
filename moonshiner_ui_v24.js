@@ -1151,7 +1151,10 @@
 
             'binary_sensor-distilling_status': { st: 'st-distilling' },
             'binary_sensor-heating_status': { st: 'st-heating' },
-            'binary_sensor-alarm_status': { st: 'st-alarm', cls: 'danger' }
+            'binary_sensor-alarm_status': { st: 'st-alarm', cls: 'danger' },
+
+            'button-refresh_ui': {},
+            'button-restart_process': {}
         };
 
         // Pre-cache DOM elements for entities to avoid dynamic lookups during critical paths

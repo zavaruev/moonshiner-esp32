@@ -36,7 +36,7 @@ export function parseState(raw) {
     return { value: isNaN(n) ? null : n, state: raw };
 }
 async function doFetch(url) {
-    const res = await fetch(`${getBase()}${url}`, { headers: { Authorization: getAuth() }, signal: AbortSignal.timeout(8000) });
+    const res = await fetch(`${getBase()}${url}`, { headers: { Authorization: getAuth(), 'Connection': 'close' }, signal: AbortSignal.timeout(8000) });
     if (!res.ok)
         throw new Error(`HTTP ${res.status} on ${url}`);
     return res.text();
@@ -44,7 +44,7 @@ async function doFetch(url) {
 async function doPost(url) {
     const res = await fetch(`${getBase()}${url}`, {
         method: 'POST',
-        headers: { Authorization: getAuth(), 'Content-Length': '0' },
+        headers: { Authorization: getAuth(), 'Content-Length': '0', 'Connection': 'close' },
         signal: AbortSignal.timeout(5000),
     });
     if (!res.ok)
@@ -121,7 +121,7 @@ export async function getAllTemperatures() {
     return { column, tank };
 }
 export async function getAllStatus() {
-    const [column, tank, uptime, wifi, heap, msg, distilling, heating, alarm, resetReason] = await Promise.all([
+    const reads = [
         readSensor('column_temperature'),
         readSensor('tank_temperature'),
         readSensor('uptime'),
@@ -132,7 +132,18 @@ export async function getAllStatus() {
         readBinarySensor('heating_status'),
         readBinarySensor('alarm_status'),
         readTextSensor('reset_reason'),
-    ]);
+    ];
+    const results = await runBatched(reads, 2);
+    const column = results[0];
+    const tank = results[1];
+    const uptime = results[2];
+    const wifi = results[3];
+    const heap = results[4];
+    const msg = results[5];
+    const distilling = results[6];
+    const heating = results[7];
+    const alarm = results[8];
+    const resetReason = results[9];
     return {
         temperatures: { column: column.value, tank: tank.value },
         uptime_sec: uptime.value,
@@ -144,4 +155,15 @@ export async function getAllStatus() {
         alarm,
         reset_reason: resetReason,
     };
+}
+async function runBatched(promises, batchSize) {
+    const results = new Array(promises.length);
+    for (let i = 0; i < promises.length; i += batchSize) {
+        const batch = promises.slice(i, i + batchSize);
+        await Promise.all(batch);
+        for (let j = 0; j < batch.length; j++) {
+            results[i + j] = await batch[j];
+        }
+    }
+    return results;
 }
