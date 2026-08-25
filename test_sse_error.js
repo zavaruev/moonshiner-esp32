@@ -1,3 +1,14 @@
+// Test: SSE malformed-payload error handling.
+//
+// Regression guard for the SSE 'state' event handler in moonshiner_ui_v24.js.
+// PR #89 removed the console.error from the JSON.parse catch-block on purpose:
+// a malformed SSE frame is an expected, non-fatal condition and must be
+// handled *silently*. This test asserts exactly that contract:
+//   1. A 'state' listener IS registered on the EventSource.
+//   2. Feeding it invalid JSON does NOT throw / crash the page.
+//   3. The failure is silent (no 'Failed to parse SSE data' console.error),
+//      matching the intentional removal of that log line.
+
 const fs = require('fs');
 const { JSDOM } = require('jsdom');
 const assert = require('assert');
@@ -13,6 +24,8 @@ const document = window.document;
 
 window.matchMedia = () => ({ matches: false });
 
+// Mock EventSource so we can capture listeners and fire events manually,
+// without ever opening a real network connection.
 let eventListeners = {};
 window.EventSource = class {
   constructor(url) {
@@ -27,18 +40,12 @@ window.EventSource = class {
   onerror() {}
 };
 
-// Intercept console.error to track calls
+// Intercept console.error so we can prove the parse failure is handled silently.
 let consoleErrors = [];
-const originalConsoleError = window.console.error;
 window.console.error = function(...args) {
   consoleErrors.push(args.join(' '));
-  // originalConsoleError.apply(window.console, args);
 };
 
-// Add addLog to avoid errors
-window.addLog = function(msg) {};
-
-// Run the script
 let jsCode = fs.readFileSync('./moonshiner_ui_v24.js', 'utf8');
 const scriptEl = document.createElement('script');
 scriptEl.textContent = jsCode;
@@ -52,17 +59,20 @@ setTimeout(() => {
 
         const stateCallback = stateListeners[0];
 
-        // Dispatch an invalid JSON payload
+        // Dispatch a deliberately malformed payload (truncated JSON).
         const mockEvent = {
             data: 'INVALID_JSON_PAYLOAD {]'
         };
 
-        // Call it directly since we mocked EventSource
-        stateCallback(mockEvent);
+        // Must not throw - the handler catches the parse error internally.
+        assert.doesNotThrow(() => {
+            stateCallback(mockEvent);
+        }, 'Malformed SSE payload should not throw');
 
-        // Check if console.error was called with the expected message
+        // PR #89 removed the console.error for SSE parse failures on purpose:
+        // verify nothing was logged to console.error for this code path.
         const errorLogged = consoleErrors.some(msg => msg.includes('Failed to parse SSE data'));
-        assert.ok(errorLogged, 'Should log error when JSON parsing fails');
+        assert.ok(!errorLogged, 'Parse failure must be handled silently (no console.error)');
 
         console.log("✅ SSE error handling test passed!");
         process.exit(0);

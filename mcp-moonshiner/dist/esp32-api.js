@@ -26,8 +26,6 @@ export function parseState(raw) {
             return { value: j.value ?? null, state: j.state };
         }
         catch (e) {
-            const safeRaw = raw.length > 100 ? raw.substring(0, 100) + '...' : raw;
-            console.error('JSON parse error:', e, 'Raw input:', safeRaw);
             return { value: null, state: raw };
         }
     }
@@ -121,17 +119,21 @@ export async function getAllTemperatures() {
     return { column, tank };
 }
 export async function getAllStatus() {
+    // Lazy task factories instead of eagerly-created promises: requests only
+    // start when their batch runs, so at most `batchSize` HTTP connections to
+    // the ESP32 are open at any moment (the device has a small lwIP socket
+    // pool) and no rejection can ever fire before it has an awaiter.
     const reads = [
-        readSensor('column_temperature'),
-        readSensor('tank_temperature'),
-        readSensor('uptime'),
-        readSensor('wifi_signal'),
-        readSensor('free_heap'),
-        readTextSensor('status_message'),
-        readBinarySensor('distilling_status'),
-        readBinarySensor('heating_status'),
-        readBinarySensor('alarm_status'),
-        readTextSensor('reset_reason'),
+        () => readSensor('column_temperature'),
+        () => readSensor('tank_temperature'),
+        () => readSensor('uptime'),
+        () => readSensor('wifi_signal'),
+        () => readSensor('free_heap'),
+        () => readTextSensor('status_message'),
+        () => readBinarySensor('distilling_status'),
+        () => readBinarySensor('heating_status'),
+        () => readBinarySensor('alarm_status'),
+        () => readTextSensor('reset_reason'),
     ];
     const results = await runBatched(reads, 2);
     const column = results[0];
@@ -156,13 +158,18 @@ export async function getAllStatus() {
         reset_reason: resetReason,
     };
 }
-async function runBatched(promises, batchSize) {
-    const results = new Array(promises.length);
-    for (let i = 0; i < promises.length; i += batchSize) {
-        const batch = promises.slice(i, i + batchSize);
-        await Promise.all(batch);
+/**
+ * Runs async tasks with bounded concurrency, preserving input order in the
+ * output. Tasks are thunks so nothing is executed until its batch starts;
+ * each batch's rejections are awaited via Promise.all before moving on.
+ */
+async function runBatched(tasks, batchSize) {
+    const results = new Array(tasks.length);
+    for (let i = 0; i < tasks.length; i += batchSize) {
+        const batch = tasks.slice(i, i + batchSize);
+        const settled = await Promise.all(batch.map(task => task()));
         for (let j = 0; j < batch.length; j++) {
-            results[i + j] = await batch[j];
+            results[i + j] = settled[j];
         }
     }
     return results;
