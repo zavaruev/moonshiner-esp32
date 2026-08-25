@@ -1409,7 +1409,6 @@
             try {
                 data = JSON.parse(e.data);
             } catch (err) {
-                console.error('Failed to parse SSE data:', err);
                 return;
             }
 
