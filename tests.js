@@ -290,7 +290,113 @@ setTimeout(() => {
         process.exit(1);
     }
 
-    // Everything passed
-    process.exit(0);
+    // Proceed to next test
+    runSetConnectedTests();
 }, 500);
+}
+
+async function runSetConnectedTests() {
+    console.log("\nStarting Test 4: setConnected Status Application");
+
+    let jsCode = fs.readFileSync('./moonshiner_ui_v24.js', 'utf8');
+
+    // Expose setConnected to window so we can test it
+    jsCode = jsCode.replace('function setConnected(state) {', 'window.setConnected = function(state) {');
+
+    let passed = 0;
+    let failed = 0;
+
+    function assertCondition(condition, message) {
+        if (!condition) {
+            console.error('❌ FAIL: ' + message);
+            failed++;
+        } else {
+            passed++;
+        }
+    }
+
+    function setupDOM() {
+        const html = `
+        <!DOCTYPE html>
+        <html>
+        <body>
+            <div id="conn-status"></div>
+            <div id="val-msg"></div>
+            <div id="val-diag-conn"></div>
+        </body>
+        </html>
+        `;
+
+        const dom = new JSDOM(html, {
+            runScripts: 'dangerously',
+            url: 'http://localhost/'
+        });
+
+        const window = dom.window;
+        const document = window.document;
+
+        window.matchMedia = () => ({ matches: false });
+        window.EventSource = class {
+            addEventListener() {}
+            onerror() {}
+        };
+
+        const scriptEl = document.createElement('script');
+        scriptEl.textContent = jsCode;
+        document.body.appendChild(scriptEl);
+
+        return new Promise(resolve => setTimeout(() => resolve({ window, document }), 100));
+    }
+
+    try {
+        // Test 1: Connected state
+        let { window, document } = await setupDOM();
+        window.setConnected(true);
+
+        let connEl = document.getElementById('conn-status');
+        let dc = document.getElementById('val-diag-conn');
+        let runEl = document.getElementById('val-msg');
+
+        assertCondition(connEl.textContent === 'Connected', 'connEl.textContent is Connected');
+        assertCondition(connEl.classList.contains('disconnected') === false, 'connEl should not have disconnected class');
+        assertCondition(connEl.style.opacity === '1', 'connEl.style.opacity is 1');
+        assertCondition(runEl.style.opacity === '0.4', 'runEl.style.opacity is 0.4');
+        assertCondition(dc.textContent === 'Connected', 'dc.textContent is Connected');
+
+        // Test 2: Disconnected state
+        ({ window, document } = await setupDOM());
+        window.setConnected(false);
+
+        connEl = document.getElementById('conn-status');
+        dc = document.getElementById('val-diag-conn');
+        runEl = document.getElementById('val-msg');
+
+        assertCondition(connEl.textContent === 'Disconnected', 'connEl.textContent is Disconnected');
+        assertCondition(connEl.classList.contains('disconnected') === true, 'connEl should have disconnected class');
+        assertCondition(connEl.style.opacity === '1', 'connEl.style.opacity is 1');
+        assertCondition(runEl.style.opacity === '', 'runEl.style.opacity is empty');
+        assertCondition(dc.textContent === 'Disconnected', 'dc.textContent is Disconnected');
+
+        // Test 3: Missing elements
+        ({ window, document } = await setupDOM());
+        document.body.innerHTML = ''; // Clear DOM
+        let threwError = false;
+        try {
+            window.setConnected(true);
+        } catch (e) {
+            threwError = true;
+        }
+        assertCondition(!threwError, 'Should handle missing elements gracefully without throwing');
+
+        if (failed === 0) {
+            console.log("✅ setConnected tests passed!");
+            process.exit(0);
+        } else {
+            console.error(`❌ setConnected tests failed: ${failed} failed`);
+            process.exit(1);
+        }
+    } catch (e) {
+        console.error("❌ setConnected tests failed with error:", e);
+        process.exit(1);
+    }
 }
