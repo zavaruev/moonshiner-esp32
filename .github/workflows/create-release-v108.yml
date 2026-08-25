@@ -1,0 +1,27 @@
+name: Create Release v1.08
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/create-release-v108.yml']
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v1.08
+      - name: Create GitHub Release v1.08
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view v1.08 >/dev/null 2>&1; then
+            echo "Release v1.08 already exists"
+            exit 0
+          fi
+          NOTES=$(printf 'Docs refresh, stable.\n\n- README/AGENTS.md refreshed: ESPHome 2026.8.x / ESP-IDF 5.5.5, full secrets list, new Testing / MCP Server / Repository Layout sections\n- No code changes since v1.07\n- Rollback instructions now reference concrete tags\n\nFull details: CHANGELOG.md')
+          gh release create v1.08 --verify-tag --title "v1.08" --notes "$NOTES"
