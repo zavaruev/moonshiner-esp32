@@ -739,48 +739,60 @@
             return el;
         }
 
+        function createBadgeRow() {
+            return h('div', {"className":"badge-row"}, [
+                h('span', {"id":"conn-status","className":"badge badge-conn disconnected"}, [
+                    "Connecting..."
+                ]),
+                h('span', {"className":"badge badge-status","id":"val-msg"}, [
+                    "Connecting..."
+                ]),
+                h('span', {"id":"st-distilling","className":"badge"}, [
+                    "Distilling"
+                ]),
+                h('span', {"id":"st-heating","className":"badge"}, [
+                    "Heating"
+                ]),
+                h('span', {"id":"st-alarm","className":"badge"}, [
+                    "Alarm"
+                ])
+            ]);
+        }
+
+        function createTopBarLeft() {
+            return h('div', {"className":"top-bar-left"}, [
+                createBadgeRow(),
+                h('button', {"className":"btn btn-danger","id":"btn-restart","style":"display:none;padding:4px 12px;font-size:11px;"}, [
+                    "Restart"
+                ])
+            ]);
+        }
+
+        function createTopBarRight() {
+            return h('div', {"className":"top-bar-right"}, [
+                h('div', {"className":"vol-mini"}, [
+                    h('span', {"className":"vol-icon","id":"vol-icon"}, [
+                        "♫"
+                    ]),
+                    h('input', {"type":"range","id":"in-vol-slider","min":"0","max":"100","step":"1","value":"100"}),
+                    h('span', {"className":"vol-val","id":"vol-val"}, [
+                        "100"
+                    ]),
+                    h('input', {"type":"number","id":"in-vol","value":"100","style":"display:none;"})
+                ]),
+                h('button', {"className":"theme-toggle","id":"btn-theme","aria-label":"Toggle theme"}, [
+                    h('span', {"className":"icon"}, [
+                        "☾"
+                    ])
+                ])
+            ]);
+        }
+
         function createTopBarCard() {
             return h('div', {"className":"card"}, [
                 h('div', {"className":"top-bar"}, [
-                    h('div', {"className":"top-bar-left"}, [
-                        h('div', {"className":"badge-row"}, [
-                            h('span', {"id":"conn-status","className":"badge badge-conn disconnected"}, [
-                                "Connecting..."
-                            ]),
-                            h('span', {"className":"badge badge-status","id":"val-msg"}, [
-                                "Connecting..."
-                            ]),
-                            h('span', {"id":"st-distilling","className":"badge"}, [
-                                "Distilling"
-                            ]),
-                            h('span', {"id":"st-heating","className":"badge"}, [
-                                "Heating"
-                            ]),
-                            h('span', {"id":"st-alarm","className":"badge"}, [
-                                "Alarm"
-                            ])
-                        ]),
-                        h('button', {"className":"btn btn-danger","id":"btn-restart","style":"display:none;padding:4px 12px;font-size:11px;"}, [
-                            "Restart"
-                        ])
-                    ]),
-                    h('div', {"className":"top-bar-right"}, [
-                        h('div', {"className":"vol-mini"}, [
-                            h('span', {"className":"vol-icon","id":"vol-icon"}, [
-                                "♫"
-                            ]),
-                            h('input', {"type":"range","id":"in-vol-slider","min":"0","max":"100","step":"1","value":"100"}),
-                            h('span', {"className":"vol-val","id":"vol-val"}, [
-                                "100"
-                            ]),
-                            h('input', {"type":"number","id":"in-vol","value":"100","style":"display:none;"})
-                        ]),
-                        h('button', {"className":"theme-toggle","id":"btn-theme","aria-label":"Toggle theme"}, [
-                            h('span', {"className":"icon"}, [
-                                "☾"
-                            ])
-                        ])
-                    ])
+                    createTopBarLeft(),
+                    createTopBarRight()
                 ])
             ]);
         }
