@@ -1,5 +1,15 @@
 # Moonshiner ESP32 - Changelog
 
+## 2026-08-25: Docs refresh, v1.08 - STABLE ✅
+
+### Documentation (no code changes since v1.07)
+- README: updated to ESPHome `2026.8.x` / ESP-IDF `5.5.5`; added full secrets list (`api_encryption_key`, `web_username`, `web_password`)
+- README: new Testing section (UI JSDOM suites + MCP vitest), MCP Server and Repository Layout sections
+- AGENTS.md: version facts refreshed; Testing conventions added (silent-failure contract, `runBatched` lazy task factories)
+- Rollback instructions now reference concrete tags (`git checkout v1.07`)
+
+---
+
 ## 2026-08-25: Merged 16 PRs (#87–#102) + local WIP, v1.07 - STABLE ✅
 
 ### Merged PRs (all reviewed; conflicts resolved during integration)

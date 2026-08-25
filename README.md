@@ -124,7 +124,7 @@ mcp-moonshiner/         # MCP server (TypeScript)
 tests.js / test_*.js    # JSDOM UI test suites
 esp32_logs.sh           # safe log viewer wrapper (sweeps stale log sessions)
 AGENTS.md               # conventions and gotchas for coding agents
-CHANGELOG.md            # release history (latest: v1.07)
+CHANGELOG.md            # release history (latest: v1.08)
 ```
 
 ## Deployment
