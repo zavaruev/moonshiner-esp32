@@ -43,7 +43,7 @@ export function parseState(raw: string): { value: number | null; state: string }
 }
 
 async function doFetch(url: string): Promise<string> {
-  const res = await fetch(`${getBase()}${url}`, { headers: { Authorization: getAuth() }, signal: AbortSignal.timeout(8000) });
+  const res = await fetch(`${getBase()}${url}`, { headers: { Authorization: getAuth(), 'Connection': 'close' }, signal: AbortSignal.timeout(8000) });
   if (!res.ok) throw new Error(`HTTP ${res.status} on ${url}`);
   return res.text();
 }
@@ -51,7 +51,7 @@ async function doFetch(url: string): Promise<string> {
 async function doPost(url: string): Promise<void> {
   const res = await fetch(`${getBase()}${url}`, {
     method: 'POST',
-    headers: { Authorization: getAuth(), 'Content-Length': '0' },
+    headers: { Authorization: getAuth(), 'Content-Length': '0', 'Connection': 'close' },
     signal: AbortSignal.timeout(5000),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status} on POST ${url}`);
@@ -140,19 +140,29 @@ export async function getAllTemperatures(): Promise<{ column: TempReading; tank:
 }
 
 export async function getAllStatus(): Promise<Record<string, unknown>> {
-  const [column, tank, uptime, wifi, heap, msg, distilling, heating, alarm, resetReason] =
-    await Promise.all([
-      readSensor('column_temperature'),
-      readSensor('tank_temperature'),
-      readSensor('uptime'),
-      readSensor('wifi_signal'),
-      readSensor('free_heap'),
-      readTextSensor('status_message'),
-      readBinarySensor('distilling_status'),
-      readBinarySensor('heating_status'),
-      readBinarySensor('alarm_status'),
-      readTextSensor('reset_reason'),
-    ]);
+  const reads: Promise<unknown>[] = [
+    readSensor('column_temperature'),
+    readSensor('tank_temperature'),
+    readSensor('uptime'),
+    readSensor('wifi_signal'),
+    readSensor('free_heap'),
+    readTextSensor('status_message'),
+    readBinarySensor('distilling_status'),
+    readBinarySensor('heating_status'),
+    readBinarySensor('alarm_status'),
+    readTextSensor('reset_reason'),
+  ];
+  const results = await runBatched(reads, 2);
+  const column = results[0] as TempReading;
+  const tank = results[1] as TempReading;
+  const uptime = results[2] as TempReading;
+  const wifi = results[3] as TempReading;
+  const heap = results[4] as TempReading;
+  const msg = results[5] as string;
+  const distilling = results[6] as boolean;
+  const heating = results[7] as boolean;
+  const alarm = results[8] as boolean;
+  const resetReason = results[9] as string;
   return {
     temperatures: { column: column.value, tank: tank.value },
     uptime_sec: uptime.value,
@@ -164,4 +174,16 @@ export async function getAllStatus(): Promise<Record<string, unknown>> {
     alarm,
     reset_reason: resetReason,
   };
+}
+
+async function runBatched<T>(promises: Promise<T>[], batchSize: number): Promise<T[]> {
+  const results: T[] = new Array(promises.length);
+  for (let i = 0; i < promises.length; i += batchSize) {
+    const batch = promises.slice(i, i + batchSize);
+    await Promise.all(batch);
+    for (let j = 0; j < batch.length; j++) {
+      results[i + j] = await batch[j];
+    }
+  }
+  return results;
 }

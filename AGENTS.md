@@ -85,6 +85,21 @@ ssh alexander@192.168.22.102 \
   "docker exec esphome esphome upload /config/moonshiner_latest/moonshiner_esp32.yaml --device 192.168.22.231"
 ```
 
+## Viewing device logs
+
+**Always use the wrapper script, never raw `docker exec esphome esphome logs`:**
+
+```bash
+./esp32_logs.sh [seconds]   # default 40s; kills stale log processes + in-container timeout
+```
+
+Raw `esphome logs` invocations left zombie processes in the container that held
+API connections open to the ESP32 (native API accepts a limited number); once
+exhausted, new log/API sessions fail with `EOF received` /
+`EncryptionHelloAPIError` until the container is restarted. The script sweeps
+stale `esphome logs` PIDs via /proc before and after, and runs logs with
+`timeout -k 5` inside the container (SIGTERM alone is ignored by python).
+
 If `kconfgen` errors during `compile`:
 ```bash
 ssh alexander@192.168.22.102 \
