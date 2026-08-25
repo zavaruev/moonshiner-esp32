@@ -1251,7 +1251,7 @@
                         const apiValue = cfg.pct ? Math.round(value * 1023 / 100) : value;
                         input.classList.add('sending');
                         try {
-                            await fetch('/' + apiPath + '/set?value=' + apiValue, { method: 'POST' });
+                            await fetch('/' + apiPath + '/set?value=' + encodeURIComponent(apiValue), { method: 'POST' });
                         } catch (err) {
                             addLog('Failed to update ' + entityId + ': ' + (err.message || err));
                         } finally {
