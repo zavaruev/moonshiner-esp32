@@ -511,7 +511,7 @@ async function runSetConnectedTests() {
     }
 
     try {
-        // Test 1: Connected state
+// Test 1: Connected state with modem blink
         let { window, document } = await setupDOM();
         window.setConnected(true);
 
@@ -519,11 +519,22 @@ async function runSetConnectedTests() {
         let dc = document.getElementById('val-diag-conn');
         let runEl = document.getElementById('val-msg');
 
+        // Initial state
         assertCondition(connEl.textContent === 'Connected', 'connEl.textContent is Connected');
         assertCondition(connEl.classList.contains('disconnected') === false, 'connEl should not have disconnected class');
         assertCondition(connEl.style.opacity === '1', 'connEl.style.opacity is 1');
         assertCondition(runEl.style.opacity === '0.4', 'runEl.style.opacity is 0.4');
         assertCondition(dc.textContent === 'Connected', 'dc.textContent is Connected');
+
+        // Wait for first timeout (150ms)
+        await new Promise(resolve => setTimeout(resolve, 160));
+        assertCondition(connEl.style.opacity === '0.4', 'connEl.style.opacity is 0.4 after first timeout');
+        assertCondition(runEl.style.opacity === '1', 'runEl.style.opacity is 1 after first timeout');
+
+        // Wait for second timeout (150ms)
+        await new Promise(resolve => setTimeout(resolve, 160));
+        assertCondition(connEl.style.opacity === '', 'connEl.style.opacity is empty after second timeout');
+        assertCondition(runEl.style.opacity === '', 'runEl.style.opacity is empty after second timeout');
 
         // Test 2: Disconnected state
         ({ window, document } = await setupDOM());
