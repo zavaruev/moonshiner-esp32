@@ -10,7 +10,7 @@
     window.onerror = function (msg, url, line, col, error) {
         const div = document.createElement('div');
         div.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:#1d1d1f;color:#fff;z-index:9999;padding:12px 20px;font-family:system-ui,sans-serif;font-size:14px;border-bottom:2px solid #0066cc';
-        div.innerText = 'Error: ' + msg;
+        div.textContent = 'Error: ' + msg;
         document.body.appendChild(div);
         return false;
     };
