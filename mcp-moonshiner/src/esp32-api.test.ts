@@ -1,10 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getBase, getAuth, parseState, readSensor, readTextSensor, readBinarySensor, setNumber, toggleSwitch, pressButton, getAllTemperatures, getAllStatus } from './esp32-api';
+import { getBase, getAuth, parseState, readSensor, readNumber, readTextSensor, readBinarySensor, setNumber, toggleSwitch, pressButton, getAllTemperatures, getAllStatus } from './esp32-api';
 
 describe('security validation for entity IDs', () => {
   const invalidIds = ['invalid/id', '../id', 'id?param=1', 'my-id-with-dashes', 'id!'];
 
   invalidIds.forEach(id => {
+    it(`should throw on invalid ID in readNumber: ${id}`, async () => {
+      await expect(readNumber(id)).rejects.toThrow(`Invalid entity ID`);
+    });
+
     it(`should throw on invalid ID in readSensor: ${id}`, async () => {
       await expect(readSensor(id)).rejects.toThrow(`Invalid entity ID`);
     });
@@ -418,5 +422,51 @@ describe('getAuth', () => {
     process.env.ESP32_URL = 'http://urluser@example.local';
     const expected = 'Basic ' + Buffer.from('urluser:').toString('base64');
     expect(getAuth()).toBe(expected);
+  });
+});
+
+describe('readNumber', () => {
+  const originalEnv = process.env.ESP32_URL;
+
+  beforeEach(() => {
+    process.env.ESP32_URL = 'http://test.local';
+    vi.stubGlobal('fetch', vi.fn());
+  });
+
+  afterEach(() => {
+    process.env.ESP32_URL = originalEnv;
+    vi.unstubAllGlobals();
+  });
+
+  it('should fetch and return a parsed numeric value', async () => {
+    const mockFetch = vi.mocked(fetch);
+    const mockResponseText = JSON.stringify({
+      id: 'target_temp',
+      state: '80.5',
+      value: 80.5
+    });
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      text: () => Promise.resolve(mockResponseText)
+    } as any);
+
+    const result = await readNumber('target_temp');
+    expect(result).toEqual({ entity: 'target_temp', raw: '80.5', value: 80.5 });
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/number/target_temp'),
+      expect.any(Object)
+    );
+  });
+
+  it('should throw an error when fetch fails', async () => {
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found'
+    } as any);
+
+    await expect(readNumber('unknown_number')).rejects.toThrow('HTTP 404 on /number/unknown_number');
   });
 });
