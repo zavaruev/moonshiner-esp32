@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getBase, getAuth, parseState, readSensor, readTextSensor, readBinarySensor, setNumber, toggleSwitch, pressButton, getAllTemperatures, getAllStatus } from './esp32-api';
+import { getBase, getAuth, parseState, readSensor, readTextSensor, readBinarySensor, setNumber, toggleSwitch, pressButton, getAllTemperatures, getAllStatus, runBatched } from './esp32-api';
 
 describe('security validation for entity IDs', () => {
   const invalidIds = ['invalid/id', '../id', 'id?param=1', 'my-id-with-dashes', 'id!'];
@@ -418,5 +418,79 @@ describe('getAuth', () => {
     process.env.ESP32_URL = 'http://urluser@example.local';
     const expected = 'Basic ' + Buffer.from('urluser:').toString('base64');
     expect(getAuth()).toBe(expected);
+  });
+});
+
+describe('runBatched', () => {
+  it('should execute tasks and preserve order', async () => {
+    const tasks = [
+      () => Promise.resolve(1),
+      () => Promise.resolve(2),
+      () => Promise.resolve(3),
+    ];
+    const results = await runBatched(tasks, 2);
+    expect(results).toEqual([1, 2, 3]);
+  });
+
+  it('should execute tasks with bounded concurrency', async () => {
+    let running = 0;
+    let maxRunning = 0;
+
+    const createTask = (id: number, delayMs: number) => {
+      return async () => {
+        running++;
+        maxRunning = Math.max(maxRunning, running);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        running--;
+        return id;
+      };
+    };
+
+    const tasks = [
+      createTask(1, 10),
+      createTask(2, 10),
+      createTask(3, 10),
+      createTask(4, 10),
+      createTask(5, 10),
+    ];
+
+    const results = await runBatched(tasks, 2);
+
+    expect(results).toEqual([1, 2, 3, 4, 5]);
+    expect(maxRunning).toBeLessThanOrEqual(2);
+  });
+
+  it('should handle empty tasks array', async () => {
+    const results = await runBatched([], 2);
+    expect(results).toEqual([]);
+  });
+
+  it('should throw if any task in a batch fails', async () => {
+    const tasks = [
+      () => Promise.resolve(1),
+      () => Promise.reject(new Error('Task 2 failed')),
+      () => Promise.resolve(3),
+    ];
+    await expect(runBatched(tasks, 2)).rejects.toThrow('Task 2 failed');
+  });
+
+  it('should not execute subsequent batches if a previous batch fails', async () => {
+    let task3Executed = false;
+    const tasks = [
+      () => Promise.resolve(1),
+      () => Promise.reject(new Error('Task 2 failed')),
+      () => {
+        task3Executed = true;
+        return Promise.resolve(3);
+      },
+    ];
+
+    try {
+      await runBatched(tasks, 2);
+    } catch (e) {
+      // Ignored
+    }
+
+    expect(task3Executed).toBe(false);
   });
 });

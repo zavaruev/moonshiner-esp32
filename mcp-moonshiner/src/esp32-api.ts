@@ -193,7 +193,7 @@ export async function getAllStatus(): Promise<Record<string, unknown>> {
  * output. Tasks are thunks so nothing is executed until its batch starts;
  * each batch's rejections are awaited via Promise.all before moving on.
  */
-async function runBatched<T>(tasks: (() => Promise<T>)[], batchSize: number): Promise<T[]> {
+export async function runBatched<T>(tasks: (() => Promise<T>)[], batchSize: number): Promise<T[]> {
   const results: T[] = new Array(tasks.length);
   for (let i = 0; i < tasks.length; i += batchSize) {
     const batch = tasks.slice(i, i + batchSize);
