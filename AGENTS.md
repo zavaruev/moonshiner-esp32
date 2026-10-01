@@ -30,14 +30,14 @@ cd mcp-moonshiner && npm test              # vitest, 75 tests
 ## Required secrets (`secrets.yaml`)
 
 ```
-wifi_ssid: "home4"
-wifi_password: "P@$$vv0rd"
-api_key: "pbBpSX4U2FVWyXAKUcNBu2pbJ2UOLkClAykFWLReYTc="
-ota_password: "2441"
-ap_password: "P@$$vv0rd"
-api_encryption_key: "36Vz2QKlJoUTforeMaG/8cNx5eIlu2XFU+XbL5VFuBI="
-web_username: "admin"
-web_password: "moonshine"
+wifi_ssid: "<your_wifi_ssid>"
+wifi_password: "<your_wifi_password>"
+api_key: "<your_api_key>"
+ota_password: "<your_ota_password>"
+ap_password: "<your_ap_password>"
+api_encryption_key: "<your_api_encryption_key>"
+web_username: "<your_web_username>"
+web_password: "<your_web_password>"
 ```
 
 ## Key architecture facts
@@ -46,7 +46,7 @@ web_password: "moonshine"
 - **Sensor wiring**: DS18B20 on OneWire GPIO4 (column `0x043C01F096B22428`, tank `0xBF14D0231E64FF28`)
 - **Actuators**: heater SSR on GPIO27 (slow_pwm 1s), valves on GPIO14/GPIO13 (custom pulse mode), buzzer on GPIO33 (LEDC RTTTL)
 - **Display**: SH1106 128x64 OLED on I2C GPIO21/GPIO22
-- **Web**: ESPHome web_server v3 on port 80 with **HTTP Basic Auth** (admin/moonshine), custom `js_include` (no default JS/CSS)
+- **Web**: ESPHome web_server v3 on port 80 with **HTTP Basic Auth** (<username>/<password>), custom `js_include` (no default JS/CSS)
 - **API encryption**: enabled via `api_encryption_key` secret
 - **Web server auth**: enabled via `web_username`/`web_password` secrets
 
@@ -68,7 +68,7 @@ Config in `opencode.json`:
   "node",
   "/home/alexander/Desktop/MoonshinerNew/mcp-moonshiner/dist/index.js",
   "--url",
-  "http://admin:moonshine@192.168.22.231"
+  "http://<username>:<password>@<esp32_ip>"
 ]
 ```
 
