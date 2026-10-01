@@ -717,16 +717,16 @@
         function h(tag, attrs, children) {
             const el = svgTags.has(tag) ? document.createElementNS(svgNS, tag) : document.createElement(tag);
             if (attrs) {
-                const keys = Object.keys(attrs);
-                for (let i = 0, l = keys.length; i < l; i++) {
-                    const key = keys[i];
-                    if (key === 'className') {
-                        if (svgTags.has(tag)) el.setAttribute('class', attrs[key]);
-                        else el.className = attrs[key];
+                for (const key in attrs) {
+                    if (Object.prototype.hasOwnProperty.call(attrs, key)) {
+                        if (key === 'className') {
+                            if (svgTags.has(tag)) el.setAttribute('class', attrs[key]);
+                            else el.className = attrs[key];
+                        }
+                        else if (key === 'htmlFor') el.htmlFor = attrs[key];
+                        else if (key === 'style') el.style.cssText = attrs[key];
+                        else el.setAttribute(key, attrs[key]);
                     }
-                    else if (key === 'htmlFor') el.htmlFor = attrs[key];
-                    else if (key === 'style') el.style.cssText = attrs[key];
-                    else el.setAttribute(key, attrs[key]);
                 }
             }
             if (children) {
