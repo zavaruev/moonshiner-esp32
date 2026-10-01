@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getBase, getAuth, parseState, readSensor, readTextSensor, readBinarySensor, setNumber, toggleSwitch, pressButton, getAllTemperatures, getAllStatus } from './esp32-api';
+import { getBase, getAuth, parseState, runBatched, readSensor, readTextSensor, readBinarySensor, setNumber, toggleSwitch, pressButton, getAllTemperatures, getAllStatus } from './esp32-api';
 
 describe('security validation for entity IDs', () => {
   const invalidIds = ['invalid/id', '../id', 'id?param=1', 'my-id-with-dashes', 'id!'];
@@ -418,5 +418,96 @@ describe('getAuth', () => {
     process.env.ESP32_URL = 'http://urluser@example.local';
     const expected = 'Basic ' + Buffer.from('urluser:').toString('base64');
     expect(getAuth()).toBe(expected);
+  });
+});
+
+describe('runBatched', () => {
+  it('should handle an empty task list', async () => {
+    const results = await runBatched([], 2);
+    expect(results).toEqual([]);
+  });
+
+  it('should run all tasks in a single batch if batchSize > task count', async () => {
+    const tasks = [
+      () => Promise.resolve(1),
+      () => Promise.resolve(2),
+      () => Promise.resolve(3)
+    ];
+    const results = await runBatched(tasks, 5);
+    expect(results).toEqual([1, 2, 3]);
+  });
+
+  it('should handle batchSize exactly dividing task count', async () => {
+    const tasks = [
+      () => Promise.resolve(1),
+      () => Promise.resolve(2),
+      () => Promise.resolve(3),
+      () => Promise.resolve(4)
+    ];
+    const results = await runBatched(tasks, 2);
+    expect(results).toEqual([1, 2, 3, 4]);
+  });
+
+  it('should handle batchSize not exactly dividing task count', async () => {
+    const tasks = [
+      () => Promise.resolve(1),
+      () => Promise.resolve(2),
+      () => Promise.resolve(3),
+      () => Promise.resolve(4),
+      () => Promise.resolve(5)
+    ];
+    const results = await runBatched(tasks, 2);
+    expect(results).toEqual([1, 2, 3, 4, 5]);
+  });
+
+  it('should preserve order when promises resolve out of order', async () => {
+    const tasks = [
+      () => new Promise(r => setTimeout(() => r(1), 30)),
+      () => new Promise(r => setTimeout(() => r(2), 10)),
+      () => new Promise(r => setTimeout(() => r(3), 20))
+    ];
+    // With batchSize 3, they all run at once. Task 2 finishes first, then 3, then 1.
+    // However, results array should remain [1, 2, 3].
+    const results = await runBatched(tasks, 3);
+    expect(results).toEqual([1, 2, 3]);
+  });
+
+  it('should reject if any task rejects', async () => {
+    const tasks = [
+      () => Promise.resolve(1),
+      () => Promise.reject(new Error('Failed')),
+      () => Promise.resolve(3)
+    ];
+    await expect(runBatched(tasks, 2)).rejects.toThrow('Failed');
+  });
+
+  it('should actually batch execution (wait for previous batch)', async () => {
+    let runningCount = 0;
+    let maxRunningCount = 0;
+
+    const makeTask = (id: number, delayMs: number) => {
+      return async () => {
+        runningCount++;
+        maxRunningCount = Math.max(maxRunningCount, runningCount);
+        await new Promise(r => setTimeout(r, delayMs));
+        runningCount--;
+        return id;
+      };
+    };
+
+    const tasks = [
+      makeTask(1, 10),
+      makeTask(2, 20),
+      makeTask(3, 10),
+      makeTask(4, 10),
+      makeTask(5, 10)
+    ];
+
+    // With a batch size of 2, max concurrent running should be 2.
+    const results = await runBatched(tasks, 2);
+
+    expect(results).toEqual([1, 2, 3, 4, 5]);
+    expect(maxRunningCount).toBe(2);
+    expect(runningCount).toBe(0);
   });
 });
