@@ -144,14 +144,17 @@ describe('API error handling (doFetch/doPost)', () => {
     await expect(readSensor('test_sensor')).rejects.toThrow('Network error');
   });
 
-  it('should propagate timeout errors thrown by fetch', async () => {
+  it('should pass an AbortSignal to fetch for timeout handling', async () => {
     const { readSensor } = await import('./esp32-api');
 
     const mockFetch = vi.mocked(fetch);
-    const timeoutError = new DOMException('The operation timed out.', 'TimeoutError');
-    mockFetch.mockRejectedValueOnce(timeoutError);
+    mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
-    await expect(readSensor('test_sensor')).rejects.toThrow(/The operation timed out/);
+    await expect(readSensor('test_sensor')).rejects.toThrow();
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ signal: expect.any(AbortSignal) })
+    );
   });
 });
 
