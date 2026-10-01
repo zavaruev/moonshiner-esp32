@@ -16,8 +16,18 @@ export function getAuth() {
     const pass = p.password || process.env.ESP32_PASS || '';
     return user ? 'Basic ' + Buffer.from(`${user}:${pass}`).toString('base64') : '';
 }
+/**
+ * Parses a raw entity payload from the ESPHome web_server v3 REST API.
+ *
+ * The device returns JSON objects like {"value":72.5,"state":"72.5 °C"} for
+ * typed entities, but plain text for others. Strategy:
+ *   1. If the payload looks like JSON (wrapped in {} or []), try to parse it.
+ *      On failure fall through with value=null and the raw string as state -
+ *      deliberately silent since PR #92: parse failures here are routine
+ *      (partial reads mid-frame) and logging them only polluted MCP stderr.
+ *   2. Otherwise, attempt a bare numeric parse; non-numerics stay null.
+ */
 export function parseState(raw) {
-    // ESPHome v3 returns JSON for sensors/numbers
     const trimmed = raw.trim();
     const isJsonLike = (trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'));
     if (isJsonLike) {
@@ -160,17 +170,26 @@ export async function getAllStatus() {
 }
 /**
  * Runs async tasks with bounded concurrency, preserving input order in the
- * output. Tasks are thunks so nothing is executed until its batch starts;
- * each batch's rejections are awaited via Promise.all before moving on.
+ * output. Tasks are thunks so nothing is executed until it starts;
+ * Uses a rolling window approach to keep concurrency level at batchSize.
  */
 async function runBatched(tasks, batchSize) {
     const results = new Array(tasks.length);
-    for (let i = 0; i < tasks.length; i += batchSize) {
-        const batch = tasks.slice(i, i + batchSize);
-        const settled = await Promise.all(batch.map(task => task()));
-        for (let j = 0; j < batch.length; j++) {
-            results[i + j] = settled[j];
+    let currentIndex = 0;
+    let hasError = false;
+    async function worker() {
+        while (currentIndex < tasks.length && !hasError) {
+            const index = currentIndex++;
+            try {
+                results[index] = await tasks[index]();
+            }
+            catch (error) {
+                hasError = true;
+                throw error; // Will propagate to Promise.all
+            }
         }
     }
+    const workers = Array.from({ length: Math.min(batchSize, tasks.length) }, () => worker());
+    await Promise.all(workers);
     return results;
 }

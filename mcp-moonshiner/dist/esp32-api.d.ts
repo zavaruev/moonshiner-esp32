@@ -1,5 +1,16 @@
 export declare function getBase(): string;
 export declare function getAuth(): string;
+/**
+ * Parses a raw entity payload from the ESPHome web_server v3 REST API.
+ *
+ * The device returns JSON objects like {"value":72.5,"state":"72.5 °C"} for
+ * typed entities, but plain text for others. Strategy:
+ *   1. If the payload looks like JSON (wrapped in {} or []), try to parse it.
+ *      On failure fall through with value=null and the raw string as state -
+ *      deliberately silent since PR #92: parse failures here are routine
+ *      (partial reads mid-frame) and logging them only polluted MCP stderr.
+ *   2. Otherwise, attempt a bare numeric parse; non-numerics stay null.
+ */
 export declare function parseState(raw: string): {
     value: number | null;
     state: string;
