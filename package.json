@@ -9,6 +9,6 @@
     "jest-environment-jsdom": "^30.4.1"
   },
   "scripts": {
-    "test": "node tests.js && node test_addLog.js && node test_sse_error.js && node test_sse_entity_id.js"
+    "test": "node tests.js && node test_addLog.js && node test_renderLog.js && node test_sse_error.js && node test_sse_entity_id.js"
   }
 }
