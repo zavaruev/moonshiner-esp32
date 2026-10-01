@@ -33,3 +33,9 @@ export declare function getAllTemperatures(): Promise<{
     tank: TempReading;
 }>;
 export declare function getAllStatus(): Promise<Record<string, unknown>>;
+/**
+ * Runs async tasks with bounded concurrency, preserving input order in the
+ * output. Tasks are thunks so nothing is executed until it starts;
+ * Uses a rolling window approach to keep concurrency level at batchSize.
+ */
+export declare function runBatched<T>(tasks: (() => Promise<T>)[], batchSize: number): Promise<T[]>;

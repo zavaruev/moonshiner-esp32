@@ -12,7 +12,7 @@ opencode.json             # MCP config with http://<esp32-ip> URL
 CHANGELOG.md / AGENTS.md / IMPROVEMENTS.md
 ```
 
-- **ESPHome version**: `2026.8.1` (Docker container `esphome/esphome:latest`, verified 2026-08-25; check `esphome version` in container if unsure)
+- **ESPHome version**: `2026.9.1` (Docker container `esphome/esphome:latest`, verified 2026-10-01; check `esphome version` in container if unsure)
 - **Board**: ESP32 dev (esp32dev)
 - **Framework**: **esp-idf** (v5.5.5; if ESPHome raises the default, update the version in the yaml)
 
@@ -30,14 +30,14 @@ cd mcp-moonshiner && npm test              # vitest, 75 tests
 ## Required secrets (`secrets.yaml`)
 
 ```
-wifi_ssid: "home4"
-wifi_password: "P@$$vv0rd"
-api_key: "pbBpSX4U2FVWyXAKUcNBu2pbJ2UOLkClAykFWLReYTc="
-ota_password: "2441"
-ap_password: "P@$$vv0rd"
-api_encryption_key: "36Vz2QKlJoUTforeMaG/8cNx5eIlu2XFU+XbL5VFuBI="
-web_username: "admin"
-web_password: "moonshine"
+wifi_ssid: "<your_wifi_ssid>"
+wifi_password: "<your_wifi_password>"
+api_key: "<your_api_key>"
+ota_password: "<your_ota_password>"
+ap_password: "<your_ap_password>"
+api_encryption_key: "<your_api_encryption_key>"
+web_username: "<your_web_username>"
+web_password: "<your_web_password>"
 ```
 
 ## Key architecture facts
@@ -46,7 +46,7 @@ web_password: "moonshine"
 - **Sensor wiring**: DS18B20 on OneWire GPIO4 (column `0x043C01F096B22428`, tank `0xBF14D0231E64FF28`)
 - **Actuators**: heater SSR on GPIO27 (slow_pwm 1s), valves on GPIO14/GPIO13 (custom pulse mode), buzzer on GPIO33 (LEDC RTTTL)
 - **Display**: SH1106 128x64 OLED on I2C GPIO21/GPIO22
-- **Web**: ESPHome web_server v3 on port 80 with **HTTP Basic Auth** (admin/moonshine), custom `js_include` (no default JS/CSS)
+- **Web**: ESPHome web_server v3 on port 80 with **HTTP Basic Auth** (<username>/<password>), custom `js_include` (no default JS/CSS)
 - **API encryption**: enabled via `api_encryption_key` secret
 - **Web server auth**: enabled via `web_username`/`web_password` secrets
 
@@ -68,7 +68,7 @@ Config in `opencode.json`:
   "node",
   "/home/alexander/Desktop/MoonshinerNew/mcp-moonshiner/dist/index.js",
   "--url",
-  "http://192.168.22.231"
+  "http://<username>:<password>@<esp32_ip>"
 ]
 ```
 
@@ -126,7 +126,8 @@ ssh alexander@192.168.22.102 \
 
 ## Known bugs / gotchas
 
-- **Web server v3 REST API (≥2026.7.4) matches entities by display name, not ID**: `/sensor/Column Temperature` works, `/sensor/column_temperature` → 404. POST requires `Content-Length: 0`. MCP handles this via `ENTITY_NAMES` map in `esp32-api.ts`; UI `api` paths use names. SSE `/events` still uses IDs.
+- **Web server v3 REST API (≥2026.7.4) matches entities by display name, not ID**: `/sensor/Column Temperature` works, `/sensor/column_temperature` → 404. POST requires `Content-Length: 0`. MCP handles this via `ENTITY_NAMES` map in `esp32-api.ts`; UI `api` paths use names. **SSE `/events` changed too**: ≥2026.9 sends `id` as `domain/Display Name` (e.g. `sensor/Column Temperature`), older builds send `domain-object_id`. UI handles both via `resolveEntityId()` in `moonshiner_ui_v24.js`.
+- **ESPHome ≥2026.9 returns 500 for `/…` requests whose `Origin`/`Referer` host it doesn't recognise** — relevant when proxying the web UI; rewrite those headers to the device's own origin.
 - If `last_temp_update` watchdog fires (60s no update), all outputs shut down — recover by reboot
 - SH1106 chips sold as "SSD1306" — use model `SH1106 128x64` not `SSD1306 128x64`
 - UI v23→v24 fixed: debounce DDOS (hundreds of req/s on slider), default values disappearing (value-with-units parsing), entity alias 404s

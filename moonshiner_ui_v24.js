@@ -1177,9 +1177,27 @@
             'button-restart_process': {}
         };
 
+        // Normalise an incoming SSE entity id to the canonical key used above.
+        // ESPHome < 2026.9 sent the object_id form ("sensor-column_temperature"),
+        // while 2026.9+ sends the display-name form ("sensor/Column Temperature").
+        // Accept both so the UI keeps working across firmware versions: the
+        // display name is slugified (lowercased, non-alphanumerics -> "_") and
+        // looked up; unknown ids are returned untouched for the log path.
+        const resolveEntityId = (raw) => {
+            if (typeof raw !== 'string') return raw;
+            if (entities[raw]) return raw;
+            const sep = raw.indexOf('/');
+            if (sep < 0) return raw;
+            const slug = raw.slice(sep + 1).toLowerCase()
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '');
+            const candidate = raw.slice(0, sep) + '-' + slug;
+            return entities[candidate] ? candidate : raw;
+        };
+
         // Pre-cache DOM elements for entities to avoid dynamic lookups during
         // critical paths (the SSE handler runs on every incoming message).
-        Object.keys(entities).forEach(function(id) {
+        for (const id in entities) {
             const cfg = entities[id];
             if (cfg.el) cfg._el = document.getElementById(cfg.el);
             if (cfg.in) {
@@ -1198,7 +1216,7 @@
             if (cfg.sl) cfg._sl = document.getElementById(cfg.sl);
             if (cfg.sw) cfg._sw = document.getElementById(cfg.sw);
             if (cfg.st) cfg._st = document.getElementById(cfg.st);
-        });
+        }
         const btnRestart = document.getElementById('btn-restart');
 
         // Restore last known values from sessionStorage
@@ -1276,17 +1294,17 @@
             if (el) {
                 el.textContent = '';
                 const frag = document.createDocumentFragment();
-                logBuffer.forEach(function (l) {
+                for (let i = 0, len = logBuffer.length; i < len; i++) {
                     const div = document.createElement('div');
-                    div.textContent = l;
+                    div.textContent = logBuffer[i];
                     frag.appendChild(div);
-                });
+                }
                 el.appendChild(frag);
                 el.scrollTop = el.scrollHeight;
             }
         }
 
-        Object.keys(entities).forEach(entityId => {
+        for (const entityId in entities) {
             const cfg = entities[entityId];
 
             if (cfg.in) {
@@ -1355,7 +1373,7 @@
                     });
                 }
             }
-        });
+        }
 
         const restartBtn = document.getElementById('btn-restart');
         if (restartBtn) {
@@ -1508,6 +1526,12 @@
                 // the frame silently and keep the UI running.
                 return;
             }
+
+            // Resolve the id first: firmware 2026.9+ sends display names
+            // ("sensor/Column Temperature"), older builds send object_ids
+            // ("sensor-column_temperature"). Everything below keeps using the
+            // canonical key so sessionStorage and the cfg lookups stay stable.
+            data.id = resolveEntityId(data.id);
 
             if (!entities[data.id]) {
                 addLog('Unknown entity: ' + data.id + ' = ' + data.state);

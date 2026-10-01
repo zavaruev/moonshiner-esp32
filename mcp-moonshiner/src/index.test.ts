@@ -75,6 +75,36 @@ describe('index.ts (MCP Server)', () => {
     process.stderr.write = originalStderrWrite;
   });
 
+
+  describe('parseArgs', () => {
+    it('sets ESP32_URL environment variable when --url is provided', async () => {
+      process.argv = ['node', 'index.js', '--url', 'http://192.168.1.100'];
+      await import('./index.js');
+      expect(process.env.ESP32_URL).toBe('http://192.168.1.100');
+    });
+
+    it('prints help and exits when --help is provided', async () => {
+      process.argv = ['node', 'index.js', '--help'];
+      await import('./index.js');
+      expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining('Moonshiner ESP32 MCP Server'));
+      expect(process.exit).toHaveBeenCalledWith(0);
+    });
+
+    it('prints help and exits when -h is provided', async () => {
+      process.argv = ['node', 'index.js', '-h'];
+      await import('./index.js');
+      expect(process.stderr.write).toHaveBeenCalledWith(expect.stringContaining('Moonshiner ESP32 MCP Server'));
+      expect(process.exit).toHaveBeenCalledWith(0);
+    });
+
+    it('ignores --url if no value is provided', async () => {
+      process.argv = ['node', 'index.js', '--url'];
+      process.env.ESP32_URL = 'http://default.url';
+      await import('./index.js');
+      expect(process.env.ESP32_URL).toBe('http://default.url'); // Should not change
+    });
+  });
+
   it('registers expected tools on the server', async () => {
     // Import the module (which will execute the top-level code)
     await import('./index.js');
@@ -346,5 +376,26 @@ describe('index.ts (MCP Server)', () => {
 
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toBe('Error: Press button error');
+  });
+
+  it('connects to transport on startup', async () => {
+    // We expect main() is called immediately since it's a top-level await/call
+    await import('./index.js');
+
+    // allow promise chain to resolve
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(mockConnect).toHaveBeenCalled();
+  });
+
+  it('handles startup error', async () => {
+    mockConnect.mockRejectedValueOnce(new Error('Connection failed'));
+
+    await import('./index.js');
+
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(process.stderr.write).toHaveBeenCalledWith('Fatal: Error: Connection failed\n');
+    expect(process.exit).toHaveBeenCalledWith(1);
   });
 });
