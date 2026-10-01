@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getBase, getAuth, parseState, readSensor, readNumber, readTextSensor, readBinarySensor, setNumber, toggleSwitch, pressButton, getAllTemperatures, getAllStatus } from './esp32-api';
+import {getBase, getAuth, parseState, readSensor, readNumber, readTextSensor, readBinarySensor, setNumber, toggleSwitch, pressButton, getAllTemperatures, getAllStatus, runBatched} from './esp32-api';
 
 describe('security validation for entity IDs', () => {
   const invalidIds = ['invalid/id', '../id', 'id?param=1', 'my-id-with-dashes', 'id!'];
@@ -468,5 +468,78 @@ describe('readNumber', () => {
     } as any);
 
     await expect(readNumber('unknown_number')).rejects.toThrow('HTTP 404 on /number/unknown_number');
+  });
+});
+
+describe('runBatched', () => {
+  it('should execute tasks and preserve order', async () => {
+    const tasks = [
+      () => Promise.resolve(1),
+      () => Promise.resolve(2),
+      () => Promise.resolve(3),
+    ];
+    const results = await runBatched(tasks, 2);
+    expect(results).toEqual([1, 2, 3]);
+  });
+
+  it('should execute tasks with bounded concurrency', async () => {
+    let running = 0;
+    let maxRunning = 0;
+
+    const createTask = (id: number, delayMs: number) => {
+      return async () => {
+        running++;
+        maxRunning = Math.max(maxRunning, running);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        running--;
+        return id;
+      };
+    };
+
+    const tasks = [
+      createTask(1, 10),
+      createTask(2, 10),
+      createTask(3, 10),
+      createTask(4, 10),
+      createTask(5, 10),
+    ];
+
+    const results = await runBatched(tasks, 2);
+
+    expect(results).toEqual([1, 2, 3, 4, 5]);
+    expect(maxRunning).toBeLessThanOrEqual(2);
+  });
+
+  it('should handle empty tasks array', async () => {
+    const results = await runBatched([], 2);
+    expect(results).toEqual([]);
+  });
+
+  it('should throw if any task in a batch fails', async () => {
+    const tasks = [
+      () => Promise.resolve(1),
+      () => Promise.reject(new Error('Task 2 failed')),
+      () => Promise.resolve(3),
+    ];
+    await expect(runBatched(tasks, 2)).rejects.toThrow('Task 2 failed');
+  });
+
+  it('should not start pending tasks after a previous one fails', async () => {
+    // NB: rewritten for the rolling-window implementation landed in PR #109.
+    // The old chunked version let this run with batchSize=2, but two workers
+    // race: worker A can pull task 3 before worker B sets the hasError flag.
+    // A single worker makes the fail-fast guarantee deterministic.
+    let task3Executed = false;
+    const tasks = [
+      () => Promise.resolve(1),
+      () => Promise.reject(new Error('Task 2 failed')),
+      () => {
+        task3Executed = true;
+        return Promise.resolve(3);
+      },
+    ];
+
+    await expect(runBatched(tasks, 1)).rejects.toThrow('Task 2 failed');
+    expect(task3Executed).toBe(false);
   });
 });

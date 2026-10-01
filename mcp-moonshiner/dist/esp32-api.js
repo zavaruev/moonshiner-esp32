@@ -173,7 +173,7 @@ export async function getAllStatus() {
  * output. Tasks are thunks so nothing is executed until it starts;
  * Uses a rolling window approach to keep concurrency level at batchSize.
  */
-async function runBatched(tasks, batchSize) {
+export async function runBatched(tasks, batchSize) {
     const results = new Array(tasks.length);
     let currentIndex = 0;
     let hasError = false;
