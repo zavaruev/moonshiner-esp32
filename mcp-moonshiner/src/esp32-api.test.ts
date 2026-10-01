@@ -399,11 +399,11 @@ describe('getAuth', () => {
     expect(getAuth()).toBe(expected);
   });
 
-  it('should prioritize URL credentials over environment variables', () => {
+  it('should prioritize environment credentials over URL credentials for security', () => {
     process.env.ESP32_URL = 'http://urluser:urlpass@example.local';
     process.env.ESP32_USER = 'envuser';
     process.env.ESP32_PASS = 'envpass';
-    const expected = 'Basic ' + Buffer.from('urluser:urlpass').toString('base64');
+    const expected = 'Basic ' + Buffer.from('envuser:envpass').toString('base64');
     expect(getAuth()).toBe(expected);
   });
 

@@ -7,7 +7,7 @@ moonshiner_esp32.yaml     # Active config (esp-idf, web auth enabled, v24 UI)
 moonshiner_ui_v24.js      # Custom frontend
 secrets.yaml              # Gitignored, must exist at deploy
 mcp-moonshiner/           # MCP server (TypeScript, 14 tools, stdio)
-opencode.json             # MCP config with http://admin:moonshine@... URL
+opencode.json             # MCP config with http://<esp32-ip> URL
 .gitignore                # Ignores /.esphome/, secrets.yaml, mcp-moonshiner/dist/
 CHANGELOG.md / AGENTS.md / IMPROVEMENTS.md
 ```
@@ -68,7 +68,7 @@ Config in `opencode.json`:
   "node",
   "/home/alexander/Desktop/MoonshinerNew/mcp-moonshiner/dist/index.js",
   "--url",
-  "http://admin:moonshine@192.168.22.231"
+  "http://192.168.22.231"
 ]
 ```
 

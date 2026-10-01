@@ -117,7 +117,19 @@ function parseArgs() {
     const args = process.argv.slice(2);
     for (let i = 0; i < args.length; i++) {
         if (args[i] === '--url' && i + 1 < args.length) {
-            process.env.ESP32_URL = args[++i];
+            const argUrl = args[++i];
+            process.env.ESP32_URL = argUrl;
+            // If URL still has credentials due to legacy usage, map them to env vars securely
+            try {
+                const u = new URL(argUrl);
+                if (u.username) {
+                    process.env.ESP32_USER = process.env.ESP32_USER || u.username;
+                }
+                if (u.password) {
+                    process.env.ESP32_PASS = process.env.ESP32_PASS || u.password;
+                }
+            }
+            catch (e) { }
         }
         else if (args[i] === '--help' || args[i] === '-h') {
             process.stderr.write(`Moonshiner ESP32 MCP Server v1.0.0

@@ -12,8 +12,8 @@ export function getAuth(): string {
     throw new Error('ESP32_URL environment variable is not set. A secure URL must be provided.');
   }
   const p = new URL(u);
-  const user = p.username || process.env.ESP32_USER || '';
-  const pass = p.password || process.env.ESP32_PASS || '';
+  const user = process.env.ESP32_USER || p.username || '';
+  const pass = process.env.ESP32_PASS || p.password || '';
   return user ? 'Basic ' + Buffer.from(`${user}:${pass}`).toString('base64') : '';
 }
 

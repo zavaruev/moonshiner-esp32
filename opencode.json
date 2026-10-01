@@ -7,7 +7,7 @@
         "node",
         "/home/alexander/Desktop/MoonshinerNew/mcp-moonshiner/dist/index.js",
         "--url",
-        "http://admin:moonshine@192.168.22.231"
+        "http://192.168.22.231"
       ],
       "enabled": true
     }
