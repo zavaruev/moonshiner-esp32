@@ -1276,11 +1276,11 @@
             if (el) {
                 el.textContent = '';
                 const frag = document.createDocumentFragment();
-                logBuffer.forEach(function (l) {
+                for (let i = 0, len = logBuffer.length; i < len; i++) {
                     const div = document.createElement('div');
-                    div.textContent = l;
+                    div.textContent = logBuffer[i];
                     frag.appendChild(div);
-                });
+                }
                 el.appendChild(frag);
                 el.scrollTop = el.scrollHeight;
             }
