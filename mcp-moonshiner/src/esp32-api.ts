@@ -190,17 +190,31 @@ export async function getAllStatus(): Promise<Record<string, unknown>> {
 
 /**
  * Runs async tasks with bounded concurrency, preserving input order in the
- * output. Tasks are thunks so nothing is executed until its batch starts;
- * each batch's rejections are awaited via Promise.all before moving on.
+ * output. Tasks are thunks so nothing is executed until it starts;
+ * Uses a rolling window approach to keep concurrency level at batchSize.
  */
 async function runBatched<T>(tasks: (() => Promise<T>)[], batchSize: number): Promise<T[]> {
   const results: T[] = new Array(tasks.length);
-  for (let i = 0; i < tasks.length; i += batchSize) {
-    const batch = tasks.slice(i, i + batchSize);
-    const settled = await Promise.all(batch.map(task => task()));
-    for (let j = 0; j < batch.length; j++) {
-      results[i + j] = settled[j];
+  let currentIndex = 0;
+  let hasError = false;
+
+  async function worker() {
+    while (currentIndex < tasks.length && !hasError) {
+      const index = currentIndex++;
+      try {
+        results[index] = await tasks[index]();
+      } catch (error) {
+        hasError = true;
+        throw error; // Will propagate to Promise.all
+      }
     }
   }
+
+  const workers = Array.from(
+    { length: Math.min(batchSize, tasks.length) },
+    () => worker()
+  );
+
+  await Promise.all(workers);
   return results;
 }
