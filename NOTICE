@@ -1,0 +1,25 @@
+moonshiner-esp32
+Copyright (c) 2026 Alexander Zavaruev
+
+This repository is dual-licensed under the GNU AGPL v3 or later and a paid
+Commercial License (see LICENSE and COMMERCIAL-LICENSE.md).
+
+THIRD-PARTY COMPONENTS
+======================
+
+1. ESPHome (the runtime this configuration is built on)
+   Project:  https://github.com/esphome/esphome
+   License:  MIT License
+   Not redistributed here: `moonshiner_esp32.yaml` is an ESPHome package
+   consumed by an ESPHome installation.
+
+2. Material Design Icons (`mdi:*` icons used by the web UI)
+   Project:  https://github.com/Templarian/MaterialDesign
+   License:  Apache License 2.0
+
+3. npm dependencies (package.json, mcp-moonshiner/package.json):
+   @modelcontextprotocol/sdk, zod, vitest, jest, jsdom, typescript, ...
+   Installed from npm at build time; each keeps its own license.
+
+MIT License text:   https://opensource.org/licenses/MIT
+Apache License 2.0: https://www.apache.org/licenses/LICENSE-2.0

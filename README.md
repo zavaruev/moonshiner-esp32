@@ -157,3 +157,21 @@ git checkout v1.07        # or any earlier tag (see `git tag -l`)
 rsync -av moonshiner_esp32.yaml moonshiner_ui_v24.js user@server:/path/to/config/
 # build and upload
 ```
+
+---
+
+## License
+
+Dual-licensed — pick one:
+
+| | License | Price | Applies when |
+|---|---|---|---|
+| **A** | **[GNU AGPL v3 or later](LICENSE)** | free | you accept copyleft: derivative works and network services must stay open source |
+| **B** | **[Commercial License](COMMERCIAL-LICENSE.md)** | **paid** | you want it in a **commercial product** — bundled with hardware, shipped closed-source, offered as SaaS, or licensed away from the AGPL |
+
+```
+SPDX-License-Identifier: AGPL-3.0-or-later
+Commercial licensing: alexander.zavaruev@gmail.com
+```
+
+Third-party components keep their own licenses — see [`NOTICE`](NOTICE).

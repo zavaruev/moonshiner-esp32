@@ -347,4 +347,25 @@ describe('index.ts (MCP Server)', () => {
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toBe('Error: Press button error');
   });
+
+  it('connects to transport on startup', async () => {
+    // We expect main() is called immediately since it's a top-level await/call
+    await import('./index.js');
+
+    // allow promise chain to resolve
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(mockConnect).toHaveBeenCalled();
+  });
+
+  it('handles startup error', async () => {
+    mockConnect.mockRejectedValueOnce(new Error('Connection failed'));
+
+    await import('./index.js');
+
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(process.stderr.write).toHaveBeenCalledWith('Fatal: Error: Connection failed\n');
+    expect(process.exit).toHaveBeenCalledWith(1);
+  });
 });
