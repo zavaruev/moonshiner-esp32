@@ -1179,7 +1179,7 @@
 
         // Pre-cache DOM elements for entities to avoid dynamic lookups during
         // critical paths (the SSE handler runs on every incoming message).
-        Object.keys(entities).forEach(function(id) {
+        for (const id in entities) {
             const cfg = entities[id];
             if (cfg.el) cfg._el = document.getElementById(cfg.el);
             if (cfg.in) {
@@ -1198,7 +1198,7 @@
             if (cfg.sl) cfg._sl = document.getElementById(cfg.sl);
             if (cfg.sw) cfg._sw = document.getElementById(cfg.sw);
             if (cfg.st) cfg._st = document.getElementById(cfg.st);
-        });
+        }
         const btnRestart = document.getElementById('btn-restart');
 
         // Restore last known values from sessionStorage
@@ -1286,7 +1286,7 @@
             }
         }
 
-        Object.keys(entities).forEach(entityId => {
+        for (const entityId in entities) {
             const cfg = entities[entityId];
 
             if (cfg.in) {
@@ -1355,7 +1355,7 @@
                     });
                 }
             }
-        });
+        }
 
         const restartBtn = document.getElementById('btn-restart');
         if (restartBtn) {
