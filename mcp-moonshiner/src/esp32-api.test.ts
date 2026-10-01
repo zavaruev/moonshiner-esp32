@@ -143,6 +143,16 @@ describe('API error handling (doFetch/doPost)', () => {
 
     await expect(readSensor('test_sensor')).rejects.toThrow('Network error');
   });
+
+  it('should propagate timeout errors thrown by fetch', async () => {
+    const { readSensor } = await import('./esp32-api');
+
+    const mockFetch = vi.mocked(fetch);
+    const timeoutError = new DOMException('The operation timed out.', 'TimeoutError');
+    mockFetch.mockRejectedValueOnce(timeoutError);
+
+    await expect(readSensor('test_sensor')).rejects.toThrow(/The operation timed out/);
+  });
 });
 
 describe('readBinarySensor', () => {
