@@ -139,6 +139,16 @@ describe('API error handling (doFetch/doPost)', () => {
     expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/number/target_temp/set?value=78.5'), expect.objectContaining({ method: 'POST' }));
   });
 
+
+  it('doPost should propagate timeout error thrown by fetch', async () => {
+    const { setNumber } = await import('./esp32-api');
+
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockRejectedValueOnce(new Error('TimeoutError'));
+
+    await expect(setNumber('target_temp', 78.5)).rejects.toThrow('TimeoutError');
+  });
+
   it('should propagate network errors thrown by fetch', async () => {
     const { readSensor } = await import('./esp32-api');
 
