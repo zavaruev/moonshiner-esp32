@@ -66,13 +66,21 @@ Config in `opencode.json`:
 ```json
 "command": [
   "node",
+  "--env-file=/home/alexander/.config/moonshiner/esp32.env",
   "/home/alexander/Desktop/MoonshinerNew/mcp-moonshiner/dist/index.js",
   "--url",
-  "http://<username>:<password>@<esp32_ip>"
+  "http://<esp32_ip>"
 ]
 ```
 
-URL includes credentials (parsed by `esp32-api.ts`). To rebuild after changes:
+Credentials live **outside the repo** in `~/.config/moonshiner/esp32.env` (`chmod 600`, never committed):
+```
+ESP32_USER=<web_username>
+ESP32_PASS=<web_password>
+```
+`getAuth()` prefers `ESP32_USER`/`ESP32_PASS` over credentials embedded in the URL; `--url` still accepts the legacy `http://user:pass@host` form and maps it into those env vars for backwards compatibility. **Never put credentials in `opencode.json`** — the repo is public (the old `admin:moonshine` stays in git history until the device password is rotated). Node resolves the file via `--env-file`, so it must exist or the MCP server won't start.
+
+To rebuild after changes:
 ```bash
 cd /home/alexander/Desktop/MoonshinerNew/mcp-moonshiner && npm run build
 ```

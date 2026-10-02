@@ -9,4 +9,8 @@ mcp-moonshiner/node_modules/
 mcp-moonshiner/dist/
 node_modules
 
+# Local credentials - never commit
+.env
+*.env
+
 .playwright-mcp/

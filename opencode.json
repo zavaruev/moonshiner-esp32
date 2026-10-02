@@ -5,6 +5,7 @@
       "type": "local",
       "command": [
         "node",
+        "--env-file=/home/alexander/.config/moonshiner/esp32.env",
         "/home/alexander/Desktop/MoonshinerNew/mcp-moonshiner/dist/index.js",
         "--url",
         "http://192.168.22.231"
