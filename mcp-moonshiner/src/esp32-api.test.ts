@@ -542,4 +542,26 @@ describe('runBatched', () => {
     await expect(runBatched(tasks, 1)).rejects.toThrow('Task 2 failed');
     expect(task3Executed).toBe(false);
   });
+
+  it('should run all tasks in a single batch if batchSize > task count', async () => {
+    const tasks = [
+      () => Promise.resolve(1),
+      () => Promise.resolve(2),
+      () => Promise.resolve(3),
+    ];
+    const results = await runBatched(tasks, 5);
+    expect(results).toEqual([1, 2, 3]);
+  });
+
+  it('should preserve order when promises resolve out of order', async () => {
+    const tasks = [
+      () => new Promise(r => setTimeout(() => r(1), 30)),
+      () => new Promise(r => setTimeout(() => r(2), 10)),
+      () => new Promise(r => setTimeout(() => r(3), 20)),
+    ];
+    // batchSize 3 runs all three at once: task 2 settles first, then 3, then 1 -
+    // results must still be in task order.
+    const results = await runBatched(tasks, 3);
+    expect(results).toEqual([1, 2, 3]);
+  });
 });
