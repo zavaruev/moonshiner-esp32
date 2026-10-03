@@ -12,6 +12,7 @@ ESPHome-based distillation controller for reflux and pot stills. Runs on an ESP3
 - **Overheat Alarm** — plays Imperial March RTTTL after 5s sustained overheat (debounced)
 - **OLED Display** — SH1106 128x64 showing uptime, IP, tank temp, heartbeat
 - **Compact Web UI** — custom Apple-style interface (no ESPHome default CSS/JS), responsive down to 375px
+- **On-device MCP Server** — Model Context Protocol endpoint built into the firmware (port 8080) so LLM agents can read/control the still with no PC or NAS in the loop
 - **Buzzer Volume Control** — cubic volume curve with 0–100 slider
 - **WiFi Hotspot Fallback** — "Moonshiner ESP32 Hotspot" AP when WiFi is unavailable
 
@@ -85,6 +86,7 @@ ota_password: "..."
 api_encryption_key: "..."   # native API encryption
 web_username: "..."         # web_server basic auth
 web_password: "..."
+mcp_api_key: "..."          # Bearer token for the on-device MCP server
 ```
 
 ### ESPHome Version
@@ -107,12 +109,33 @@ npm test           # = node tests.js && node test_addLog.js && node test_sse_err
 MCP server has its own vitest suite:
 
 ```bash
-cd mcp-moonshiner && npm install && npm test    # 75 tests
+cd mcp-moonshiner && npm install && npm test    # 96 tests
 ```
 
 ## MCP Server
 
-`mcp-moonshiner/` — a TypeScript MCP server (stdio) exposing 14 tools to control/inspect the still from LLM agents. Talks to the ESP32 web_server v3 REST API with HTTP Basic Auth; entity lookups use display names (`sensor/Column Temperature`) since web_server v3 ≥ 2026.7.4. Rebuild after edits: `cd mcp-moonshiner && npm run build`.
+The still exposes a **Model Context Protocol** server so LLM agents can inspect and control distillation with 14 tools (`read_temperatures`, `get_status`, `get_entity`, `set_target_temp`, `set_heater_power`, `set_valve_high/low`, `toggle_reduction`, `restart_process`, …). There are two interchangeable implementations:
+
+### On-device (primary) — `components/mcp_server/`
+
+An ESPHome external component compiled **into the ESP32 firmware** itself: a stateless Streamable HTTP MCP server — no PC, NAS, or Node.js required.
+
+```bash
+curl http://192.168.22.231:8080/mcp \
+  -H "Authorization: Bearer $MOONSHINER_MCP_TOKEN" \
+  -H "Content-Type: application/json" -H "Accept: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+- **Endpoint**: `http://<esp32-ip>:8080/mcp` (its own `esp_http_server`, port 8080, separate from the web UI on port 80)
+- **Auth**: HTTP Bearer with the `mcp_api_key` secret — requests without the token get `401`
+- **Protocol**: JSON-RPC 2.0, stateless (no session tracking), ArduinoJson 7
+- **Boot telemetry**: `GET /diag` returns load-phase bits, httpd error code, heap and port status — useful when ports look dead
+- opencode is configured for it in `opencode.json` via `Bearer {env:MOONSHINER_MCP_TOKEN}` (the token lives only in shell rc files, never in the repo)
+
+### Fallback (Node stdio) — `mcp-moonshiner/`
+
+TypeScript MCP server over stdio, same 14 tools, talking to the ESP32 web_server v3 REST API with HTTP Basic Auth; entity lookups use display names (`sensor/Column Temperature`) since web_server v3 ≥ 2026.7.4. Disabled in `opencode.json` (`"enabled": false`) — flip it back if the device is down. Rebuild after edits: `cd mcp-moonshiner && npm run build`.
 
 ## Repository Layout
 
@@ -120,11 +143,12 @@ cd mcp-moonshiner && npm install && npm test    # 75 tests
 moonshiner_esp32.yaml   # the single ESPHome config (esp-idf framework)
 moonshiner_ui_v24.js    # custom frontend, embedded at compile time
 secrets.yaml            # gitignored, see list above
-mcp-moonshiner/         # MCP server (TypeScript)
+components/mcp_server/  # on-device MCP server (C++, port 8080 /mcp)
+mcp-moonshiner/         # Node MCP fallback (TypeScript, stdio)
 tests.js / test_*.js    # JSDOM UI test suites
 esp32_logs.sh           # safe log viewer wrapper (sweeps stale log sessions)
 AGENTS.md               # conventions and gotchas for coding agents
-CHANGELOG.md            # release history (latest: v1.08)
+CHANGELOG.md            # release history (latest: v1.09)
 ```
 
 ## Deployment

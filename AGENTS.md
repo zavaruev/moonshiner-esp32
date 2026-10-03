@@ -21,7 +21,7 @@ CHANGELOG.md / AGENTS.md / IMPROVEMENTS.md
 
 ```bash
 npm test                                   # UI suites: tests.js + test_addLog.js + test_sse_error.js
-cd mcp-moonshiner && npm test              # vitest, 75 tests
+cd mcp-moonshiner && npm test              # vitest, 96 tests
 ```
 
 - `tests.js` chains 7 suites and exits non-zero on any failure
