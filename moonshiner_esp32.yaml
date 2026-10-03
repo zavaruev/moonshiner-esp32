@@ -31,6 +31,18 @@ esphome:
         - lambda: |-
             id(wifi_signal_sensor).update();
 
+    # --- boot diagnostics: UDP probes to 192.168.22.102:9001 (NAS) and
+    # 192.168.22.249:9001 (PC); buffered, flushed from mcp_server loop() ---
+    - priority: 248
+      then:
+        - lambda: 'mcp_server::debug_send("P248-after-web");'
+    - priority: 199
+      then:
+        - lambda: 'mcp_server::debug_send("P199-after-api");'
+    - priority: 99
+      then:
+        - lambda: 'mcp_server::debug_send("P099-after-mdns");'
+
   on_shutdown:
     then:
       # SAFETY: Turn off all outputs on shutdown/restart
@@ -85,6 +97,18 @@ wifi:
   ap:
     ssid: "Moonshiner ESP32 Hotspot"
     password: !secret ap_password
+
+# On-device MCP endpoint (Model Context Protocol over Streamable HTTP).
+# Lives in the firmware itself: port 8080, bearer-token auth via `api_key`.
+# See components/mcp_server/ and AGENTS.md ("On-device MCP server").
+external_components:
+  - source:
+      type: local
+      path: components
+
+mcp_server:
+  port: 8080
+  api_key: !secret mcp_api_key
 
 # Web Server v3 - Serves the Custom UI
 web_server:

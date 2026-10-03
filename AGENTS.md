@@ -6,8 +6,9 @@
 moonshiner_esp32.yaml     # Active config (esp-idf, web auth enabled, v24 UI)
 moonshiner_ui_v24.js      # Custom frontend
 secrets.yaml              # Gitignored, must exist at deploy
-mcp-moonshiner/           # MCP server (TypeScript, 14 tools, stdio)
-opencode.json             # MCP config with http://<esp32-ip> URL
+components/mcp_server/    # On-device MCP server (C++,14 tools, port 8080 /mcp)
+mcp-moonshiner/           # Node MCP fallback (TypeScript, 14 tools, stdio)
+opencode.json             # MCP config: remote device MCP + disabled stdio fallback
 .gitignore                # Ignores /.esphome/, secrets.yaml, mcp-moonshiner/dist/
 CHANGELOG.md / AGENTS.md / IMPROVEMENTS.md
 ```
@@ -38,6 +39,7 @@ ap_password: "<your_ap_password>"
 api_encryption_key: "<your_api_encryption_key>"
 web_username: "<your_web_username>"
 web_password: "<your_web_password>"
+mcp_api_key: "<your_mcp_bearer_token>"
 ```
 
 ## Key architecture facts
@@ -60,9 +62,48 @@ GPIO25-27 share ADC2 with WiFi — **never use these for PWM** when WiFi is on (
 
 ## MCP Server
 
-Located at `mcp-moonshiner/`. Built with TypeScript, exposes 14 MCP tools via stdio. Connects to ESP32 web_server API with HTTP Basic Auth.
+### Primary: on-device MCP (built into firmware)
 
-Config in `opencode.json`:
+`components/mcp_server/` is an ESPHome external component — a **stateless
+Streamable HTTP MCP server running on the ESP32 itself** (no PC/NAS required):
+
+- **Endpoint**: `http://192.168.22.231:8080/mcp` (separate `esp_http_server`,
+  port 8080; ArduinoJson 7)
+- **Auth**: Bearer token from `mcp_api_key` secret. 401 without it.
+- **Tools**: same 14 as the Node server (read_temperatures, get_status,
+  get_entity, set_*, toggle_*, restart_process)
+- **Setup priority 210** (after wifi 250 / web 249 / network 220, before
+  ota/api 200): if `App.setup()` ever stalls later, the httpd task is already
+  bound and still answers
+- **`GET /diag`** (unauthenticated, temporary): boot telemetry —
+  `httpd_err`, `phases` bitmask (1=P248 probe, 2=P199, 4=P099, 8=App.loop
+  ran, 16=setup), heap, port statuses. Use it first when ports look dead.
+- **UDP diagnostics**: `debug_send()` probes (on_boot triggers at priorities
+  248/199/99 in the yaml) buffer messages and `loop()` flushes them to
+  `192.168.22.102:9001` (NAS) and `192.168.22.249:9001` (PC). Non-blocking;
+  collectors are plain python UDP listeners.
+
+opencode.json points at the device:
+
+```json
+"moonshiner-esp32": {
+  "type": "remote",
+  "url": "http://192.168.22.231:8080/mcp",
+  "oauth": false,
+  "headers": { "Authorization": "Bearer {env:MOONSHINER_MCP_TOKEN}" }
+}
+```
+
+The token lives only in `~/.bashrc` / `~/.profile` (`export
+MOONSHINER_MCP_TOKEN=<mcp_api_key>`) — **never in the repo**. opencode must be
+launched from a shell that has it.
+
+### Fallback: Node stdio MCP (`mcp-moonshiner/`)
+
+TypeScript, 14 tools over stdio, talks to the ESP32 web_server REST API with
+HTTP Basic Auth. Disabled in `opencode.json` (`"enabled": false`); flip it
+back if the device is down or you need the Node implementation.
+
 ```json
 "command": [
   "node",
@@ -136,6 +177,8 @@ ssh alexander@192.168.22.102 \
 
 - **Web server v3 REST API (≥2026.7.4) matches entities by display name, not ID**: `/sensor/Column Temperature` works, `/sensor/column_temperature` → 404. POST requires `Content-Length: 0`. MCP handles this via `ENTITY_NAMES` map in `esp32-api.ts`; UI `api` paths use names. **SSE `/events` changed too**: ≥2026.9 sends `id` as `domain/Display Name` (e.g. `sensor/Column Temperature`), older builds send `domain-object_id`. UI handles both via `resolveEntityId()` in `moonshiner_ui_v24.js`.
 - **ESPHome ≥2026.9 returns 500 for `/…` requests whose `Origin`/`Referer` host it doesn't recognise** — relevant when proxying the web UI; rewrite those headers to the device's own origin.
+- **Second `esp_http_server` needs a unique `ctrl_port`**: ESP-IDF httpd's default UDP ctrl port is 32768 for *every* instance — if web_server (priority 249) binds it first, `httpd_start()` fails with a bare `ESP_FAIL (-1)` and no errno. That is exactly how the MCP server looked "dead": at setup priority 600 it bound 32768 *first* and web_server's httpd died (port 80 refused). Our instance now uses `config.ctrl_port = port_ + 1000` (9080). Never add another httpd without a unique ctrl port.
+- **ESPHome setup priorities run high-to-low**: wifi 250 → web 249 → network 220 → mcp 210 → ota/api 200 → mdns 100. Sockets work from ~249 on; DHCP/IP lands ~10-12 s after boot even though `App.setup()` finishes in ~1 s (WiFi connects asynchronously, `can_proceed()` defaults to true).
 - If `last_temp_update` watchdog fires (60s no update), all outputs shut down — recover by reboot
 - SH1106 chips sold as "SSD1306" — use model `SH1106 128x64` not `SSD1306 128x64`
 - UI v23→v24 fixed: debounce DDOS (hundreds of req/s on slider), default values disappearing (value-with-units parsing), entity alias 404s

@@ -1,5 +1,23 @@
 # Moonshiner ESP32 - Changelog
 
+## 2026-10-03: On-device MCP server (firmware), v1.09 - STABLE ✅
+
+### New: `components/mcp_server/` — MCP built into the ESP32
+- External ESPHome component: stateless Streamable HTTP MCP on **port 8080, `/mcp`** (separate `esp_http_server`, ArduinoJson 7) — same 14 tools as the Node server, no PC/NAS required
+- **Bearer auth** via `!secret mcp_api_key` (401 without token); token never committed
+- Setup priority **210** (after wifi 250/web 249/network 220, before api 200) so the httpd task answers even if `App.setup()` later stalls
+- **Unique httpd ctrl port** (`port_ + 1000` → 9080): root cause of the "dead ports" debugging saga — default UDP ctrl 32768 is shared by every `esp_http_server` instance, so whoever binds first kills the other with a bare `ESP_FAIL` (at priority 600 we broke web_server's port 80; at 210 web_server broke ours)
+- **Diagnostics**: `GET /diag` (phases bitmask, httpd_err, heap, port status) + non-blocking `debug_send()` UDP probes (on_boot priorities 248/199/99) flushed from `loop()` to `192.168.22.102:9001` and `192.168.22.249:9001`
+- Root-cause facts established: `Component::can_proceed()` defaults true → WiFi connects async, IP ~10-12 s after boot while `App.setup()` finishes in ~1 s (verified: `LOOP t=1054ms`)
+
+### Config / docs
+- `opencode.json`: primary MCP switched to remote `moonshiner-esp32` (`http://192.168.22.231:8080/mcp`, `Bearer {env:MOONSHINER_MCP_TOKEN}`); Node stdio MCP kept as fallback (`enabled: false`)
+- Token exported in `~/.bashrc` / `~/.profile` only — outside the public repo
+- `AGENTS.md`: MCP primary/fallback sections, secrets list (+`mcp_api_key`), ctrl-port + setup-priority gotchas
+- Verified: `npm test` UI suites green, `mcp-moonshiner` vitest 96/96, curl suite (initialize / tools/list 14 tools / read_temperatures live data / 401 no token), all 4 ports open (80, 6053, 8080, 3232)
+
+---
+
 ## 2026-08-25: Docs refresh, v1.08 - STABLE ✅
 
 ### Documentation (no code changes since v1.07)
