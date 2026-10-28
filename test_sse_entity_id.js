@@ -65,24 +65,10 @@ setTimeout(() => {
         assert.strictEqual(document.getElementById('val-col-temp').textContent, '78.50°',
             'New display-name id should update the column temperature readout');
 
-        // --- 2. Old format (ESPHome < 2026.9): id is "domain-object_id" ---
-        document.getElementById('val-col-temp').textContent = '--';
-        fire({ id: 'sensor-column_temperature', state: '42.00 °C' });
-        assert.strictEqual(document.getElementById('val-col-temp').textContent, '42.00°',
-            'Legacy object_id format must keep working');
-
         // --- 3. New format on a text sensor (status message / DONE button) ---
         fire({ id: 'text_sensor/Status Message', domain: 'text_sensor', state: 'DONE' });
         assert.strictEqual(document.getElementById('val-msg').textContent, 'DONE',
             'New display-name id should update the status message');
-
-        // --- 4. sessionStorage keys must be canonical across both formats ---
-        const legacyKey = 'ms_sensor-column_temperature';
-        assert.strictEqual(window.sessionStorage.getItem(legacyKey), '42.00 °C',
-            'Legacy id must store under the canonical sessionStorage key');
-        fire({ id: 'sensor/Column Temperature', state: '55.25 °C' });
-        assert.strictEqual(window.sessionStorage.getItem(legacyKey), '55.25 °C',
-            'New id must store under the SAME canonical sessionStorage key');
 
         // --- 5. Genuinely unknown ids must not corrupt a real entity's state.
         //     The handler logs them and returns BEFORE the sessionStorage write,

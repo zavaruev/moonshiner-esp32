@@ -144,8 +144,8 @@ document2.body.appendChild(scriptEl2);
 
 setTimeout(() => {
     // Trigger Number input error
-    if (window2.entities && window2.entities['number-target_column_temp']) {
-        const cfg = window2.entities['number-target_column_temp'];
+    if (window2.entities && window2.entities['number/Target Column Temp']) {
+        const cfg = window2.entities['number/Target Column Temp'];
         const input = document2.getElementById(cfg.in);
         if (input) {
             input.value = "20";
@@ -154,8 +154,8 @@ setTimeout(() => {
     }
 
     // Trigger Switch toggle error
-    if (window2.entities && window2.entities['switch-use_reduction_coefficient']) {
-        const cfg = window2.entities['switch-use_reduction_coefficient'];
+    if (window2.entities && window2.entities['switch/Use Reduction Coefficient']) {
+        const cfg = window2.entities['switch/Use Reduction Coefficient'];
         const switchEl = document2.getElementById(cfg.sw);
         if (switchEl) {
             switchEl.checked = true;
@@ -172,12 +172,12 @@ setTimeout(() => {
     setTimeout(() => {
         let passed = true;
 
-        if (!window2.addLogs || !window2.addLogs.some(log => log.includes('Failed to update number-target_column_temp'))) {
+        if (!window2.addLogs || !window2.addLogs.some(log => log.includes('Failed to update number/Target Column Temp'))) {
             console.error("FAIL: Missing log for number update error");
             passed = false;
         }
 
-        if (!window2.addLogs || !window2.addLogs.some(log => log.includes('Failed to toggle switch-use_reduction_coefficient'))) {
+        if (!window2.addLogs || !window2.addLogs.some(log => log.includes('Failed to toggle switch/Use Reduction Coefficient'))) {
             console.error("FAIL: Missing log for switch toggle error");
             passed = false;
         }
@@ -256,7 +256,7 @@ setTimeout(() => {
                     // Trigger SSE to test setItem
                     if (window3.mockEventSource && window3.mockEventSource.listeners && window3.mockEventSource.listeners['state']) {
                         window3.mockEventSource.listeners['state']({
-                            data: JSON.stringify({ id: 'text_sensor-status_message', state: 'DONE' })
+                            data: JSON.stringify({ id: 'text_sensor/Status Message', state: 'DONE' })
                         });
 
                         if (setItemCalled) {
@@ -405,20 +405,20 @@ setTimeout(() => {
         }
 
         // Test cold temp
-        window4.updateTempVisuals('sensor-column_temperature', 50);
+        window4.updateTempVisuals('sensor/Column Temperature', 50);
         const colCard = document4.getElementById('col-temp-card');
         const colArc = document4.getElementById('col-temp-arc');
         assert.strictEqual(colCard.classList.contains('temp-cold'), true, 'cold temp should add temp-cold');
         assert.strictEqual(colArc.getAttribute('stroke'), 'var(--primary)', 'cold temp should set primary stroke');
 
         // Test warm temp
-        window4.updateTempVisuals('sensor-column_temperature', 70);
+        window4.updateTempVisuals('sensor/Column Temperature', 70);
         assert.strictEqual(colCard.classList.contains('temp-warm'), true, 'warm temp should add temp-warm');
         assert.strictEqual(colCard.classList.contains('temp-cold'), false, 'warm temp should remove temp-cold');
         assert.strictEqual(colArc.getAttribute('stroke'), 'var(--warn)', 'warm temp should set warn stroke');
 
         // Test hot temp & dash offset calculation
-        window4.updateTempVisuals('sensor-tank_temperature', 90);
+        window4.updateTempVisuals('sensor/Tank Temperature', 90);
         const tankCard = document4.getElementById('tank-temp-card');
         const tankArc = document4.getElementById('tank-temp-arc');
         assert.strictEqual(tankCard.classList.contains('temp-hot'), true, 'hot temp should add temp-hot');
@@ -430,7 +430,7 @@ setTimeout(() => {
         // we can temporarily remove the arc and test
         tankArc.remove();
         assert.doesNotThrow(() => {
-            window4.updateTempVisuals('sensor-tank_temperature', 60);
+            window4.updateTempVisuals('sensor/Tank Temperature', 60);
         }, 'missing arc should not throw');
 
         // Test missing card element doesn't crash
@@ -440,7 +440,7 @@ setTimeout(() => {
 
         // Test null temp doesn't crash
         assert.doesNotThrow(() => {
-            window4.updateTempVisuals('sensor-column_temperature', null);
+            window4.updateTempVisuals('sensor/Column Temperature', null);
         }, 'null temp should not throw');
 
         console.log("✅ updateTempVisuals tests passed!");

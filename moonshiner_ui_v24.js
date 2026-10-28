@@ -1143,57 +1143,40 @@
         };
 
         const entities = {
-            'sensor-column_temperature': { el: 'val-col-temp', fmt: v => { const n = parseNum(v); return n !== null ? n.toFixed(2) + '\u00B0' : '--'; }, temp: 'val-col-temp' },
-            'sensor-tank_temperature': { el: 'val-tank-temp', fmt: v => { const n = parseNum(v); return n !== null ? n.toFixed(1) + '\u00B0' : '--'; }, temp: 'val-tank-temp' },
-            'sensor-uptime': { el: 'val-uptime', fmt: v => { const s = parseInt(v); return isNaN(s) ? '--' : Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm'; } },
-            'sensor-wifi_signal': { el: 'val-wifi', fmt: v => { const n = parseNum(v); return n !== null ? Math.round(n) : '--'; } },
-            'sensor-free_heap': { el: 'val-heap', fmt: v => { const n = parseNum(v); return n !== null ? Math.round(n / 1024) + 'KB' : '--'; } },
-            'sensor-loop_time': { el: 'val-loop-time', fmt: v => { const n = parseNum(v); return n !== null ? n.toFixed(0) + 'ms' : '--'; } },
+            'sensor/Column Temperature': { el: 'val-col-temp', fmt: v => { const n = parseNum(v); return n !== null ? n.toFixed(2) + '\u00B0' : '--'; }, temp: 'val-col-temp' },
+            'sensor/Tank Temperature': { el: 'val-tank-temp', fmt: v => { const n = parseNum(v); return n !== null ? n.toFixed(1) + '\u00B0' : '--'; }, temp: 'val-tank-temp' },
+            'sensor/Uptime': { el: 'val-uptime', fmt: v => { const s = parseInt(v); return isNaN(s) ? '--' : Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm'; } },
+            'sensor/WiFi Signal': { el: 'val-wifi', fmt: v => { const n = parseNum(v); return n !== null ? Math.round(n) : '--'; } },
+            'sensor/Free Heap': { el: 'val-heap', fmt: v => { const n = parseNum(v); return n !== null ? Math.round(n / 1024) + 'KB' : '--'; } },
+            'sensor/Loop Time': { el: 'val-loop-time', fmt: v => { const n = parseNum(v); return n !== null ? n.toFixed(0) + 'ms' : '--'; } },
 
-            'text_sensor-status_message': { el: 'val-msg' },
-            'text_sensor-reset_reason': { el: 'val-reset' },
-            'text_sensor-diagnostic_message': { el: 'val-diag', noStore: true },
+            'text_sensor/Status Message': { el: 'val-msg' },
+            'text_sensor/Reset Reason': { el: 'val-reset' },
+            'text_sensor/Diagnostic Message': { el: 'val-diag', noStore: true },
 
-            'number-target_column_temp': { in: 'in-target', sl: 'in-target-slider', api: 'number/Target Column Temp' },
-            'number-delta': { in: 'in-delta', api: 'number/Delta' },
-            'number-coef_otbora': { in: 'in-coef', sl: 'in-coef-slider', api: 'number/Coef Otbora' },
-            'number-max_tank_temp': { in: 'in-max-tank', sl: 'in-max-tank-slider', api: 'number/Max Tank Temp' },
-            'number-valve_high_setting': { in: 'in-vh', sl: 'in-vh-slider', api: 'number/Valve High Setting', pct: true },
-            'number-valve_low_setting': { in: 'in-vl', sl: 'in-vl-slider', api: 'number/Valve Low Setting', pct: true },
-            'number-heater_power': { in: 'in-heat', sl: 'in-heat-slider', api: 'number/Heater Power' },
-            'number-buzzer_volume': { in: 'in-vol', sl: 'in-vol-slider', api: 'number/Buzzer Volume' },
+            'number/Target Column Temp': { in: 'in-target', sl: 'in-target-slider', api: 'number/Target Column Temp' },
+            'number/Delta': { in: 'in-delta', api: 'number/Delta' },
+            'number/Coef Otbora': { in: 'in-coef', sl: 'in-coef-slider', api: 'number/Coef Otbora' },
+            'number/Max Tank Temp': { in: 'in-max-tank', sl: 'in-max-tank-slider', api: 'number/Max Tank Temp' },
+            'number/Valve High Setting': { in: 'in-vh', sl: 'in-vh-slider', api: 'number/Valve High Setting', pct: true },
+            'number/Valve Low Setting': { in: 'in-vl', sl: 'in-vl-slider', api: 'number/Valve Low Setting', pct: true },
+            'number/Heater Power': { in: 'in-heat', sl: 'in-heat-slider', api: 'number/Heater Power' },
+            'number/Buzzer Volume': { in: 'in-vol', sl: 'in-vol-slider', api: 'number/Buzzer Volume' },
 
-            'switch-use_reduction_coefficient': { sw: 'sw-reduction', api: 'switch/Use Reduction Coefficient' },
-            'switch-disable_upper_valve_closing': { sw: 'sw-disable-close', api: 'switch/Disable Upper Valve Closing' },
+            'switch/Use Reduction Coefficient': { sw: 'sw-reduction', api: 'switch/Use Reduction Coefficient' },
+            'switch/Disable Upper Valve Closing': { sw: 'sw-disable-close', api: 'switch/Disable Upper Valve Closing' },
 
-            'binary_sensor-distilling_status': { st: 'st-distilling' },
-            'binary_sensor-heating_status': { st: 'st-heating' },
-            'binary_sensor-alarm_status': { st: 'st-alarm', cls: 'danger' },
+            'binary_sensor/Distilling Status': { st: 'st-distilling' },
+            'binary_sensor/Heating Status': { st: 'st-heating' },
+            'binary_sensor/Alarm Status': { st: 'st-alarm', cls: 'danger' },
 
             // Button entities have no persistent value to display; they are
             // listed so the SSE handler can silently consume their state
             // events instead of logging "unknown entity" noise.
-            'button-refresh_ui': {},
-            'button-restart_process': {}
+            'button/Refresh UI': {},
+            'button/Restart Process': {}
         };
 
-        // Normalise an incoming SSE entity id to the canonical key used above.
-        // ESPHome < 2026.9 sent the object_id form ("sensor-column_temperature"),
-        // while 2026.9+ sends the display-name form ("sensor/Column Temperature").
-        // Accept both so the UI keeps working across firmware versions: the
-        // display name is slugified (lowercased, non-alphanumerics -> "_") and
-        // looked up; unknown ids are returned untouched for the log path.
-        const resolveEntityId = (raw) => {
-            if (typeof raw !== 'string') return raw;
-            if (entities[raw]) return raw;
-            const sep = raw.indexOf('/');
-            if (sep < 0) return raw;
-            const slug = raw.slice(sep + 1).toLowerCase()
-                .replace(/[^a-z0-9]+/g, '_')
-                .replace(/^_+|_+$/g, '');
-            const candidate = raw.slice(0, sep) + '-' + slug;
-            return entities[candidate] ? candidate : raw;
-        };
 
         // Pre-cache DOM elements for entities to avoid dynamic lookups during
         // critical paths (the SSE handler runs on every incoming message).
@@ -1455,7 +1438,7 @@
          * danger). Safe to call with a missing element or a null reading.
          */
         function updateTempVisuals(sensorId, tempC) {
-            const isCol = sensorId === 'sensor-column_temperature';
+            const isCol = sensorId === 'sensor/Column Temperature';
             const card = isCol ? colTempCard : tankTempCard;
             const arc = isCol ? colTempArc : tankTempArc;
             if (!card || tempC === null) return;
@@ -1527,11 +1510,6 @@
                 return;
             }
 
-            // Resolve the id first: firmware 2026.9+ sends display names
-            // ("sensor/Column Temperature"), older builds send object_ids
-            // ("sensor-column_temperature"). Everything below keeps using the
-            // canonical key so sessionStorage and the cfg lookups stay stable.
-            data.id = resolveEntityId(data.id);
 
             if (!entities[data.id]) {
                 addLog('Unknown entity: ' + data.id + ' = ' + data.state);
@@ -1554,7 +1532,7 @@
                     const newText = cfg.fmt ? cfg.fmt(data.state) : data.state;
                     el.textContent = newText;
 
-                    if (data.id === 'text_sensor-status_message') {
+                    if (data.id === 'text_sensor/Status Message') {
                         const btn = btnRestart;
                         if (btn) {
                             btn.style.display = (data.state === 'DONE') ? 'inline-flex' : 'none';
@@ -1562,13 +1540,13 @@
                         el.classList.toggle('done', data.state === 'DONE');
                     }
 
-                    if (data.id === 'text_sensor-diagnostic_message') {
+                    if (data.id === 'text_sensor/Diagnostic Message') {
                         addLog(String(data.state));
                     }
 
                     el.classList.remove('skel');
 
-                    if (data.id === 'sensor-column_temperature' || data.id === 'sensor-tank_temperature') {
+                    if (data.id === 'sensor/Column Temperature' || data.id === 'sensor/Tank Temperature') {
                         const n = parseFloat(data.state);
                         if (!isNaN(n)) updateTempVisuals(data.id, n);
                     }
@@ -1576,16 +1554,16 @@
 
                 // Mirror to diagnostics card (runs even if old header element is gone)
                 const _dt = cfg.fmt ? cfg.fmt(data.state) : data.state;
-                if (data.id === 'text_sensor-reset_reason') {
+                if (data.id === 'text_sensor/Reset Reason') {
                     if (diagResetLog) diagResetLog.textContent = String(data.state);
                 }
-                if (data.id === 'sensor-uptime') {
+                if (data.id === 'sensor/Uptime') {
                     if (diagUptime) diagUptime.textContent = _dt;
                 }
-                if (data.id === 'sensor-wifi_signal') {
+                if (data.id === 'sensor/WiFi Signal') {
                     if (diagWifi) diagWifi.textContent = _dt;
                 }
-                if (data.id === 'sensor-free_heap') {
+                if (data.id === 'sensor/Free Heap') {
                     if (diagHeap) diagHeap.textContent = _dt;
                 }
             }
