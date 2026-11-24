@@ -14,3 +14,10 @@ node_modules
 *.env
 
 .playwright-mcp/
+
+# Native ESP-IDF build artifacts and local credentials
+/build/
+/sdkconfig
+/managed_components/
+/main/credentials.h
+

@@ -1,0 +1,23 @@
+# Hardware facts: ESP32 (esp32dev), 4 MB flash. Keep the same partition table
+# as the ESPHome firmware so both OTA slots stay compatible during cutover.
+CONFIG_IDF_TARGET="esp32"
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# Two app slots plus bootloader rollback: a failed native image reverts to the
+# previous one on the next reboot. Mark valid only after a health check.
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+
+# The ESPHome config raised these for OneWire retries and many simultaneous
+# HTTP/SSE/MCP clients; keep them so the port does not regress.
+CONFIG_ESP_TASK_WDT_TIMEOUT_S=30
+CONFIG_ESP_TASK_WDT_PANIC=n
+# OneWire conversion must not outrun the interrupt watchdog.
+CONFIG_ESP_INT_WDT_TIMEOUT_MS=1000
+CONFIG_LWIP_MAX_SOCKETS=16
+CONFIG_HTTPD_MAX_REQ_HDR_LEN=1024
+CONFIG_FREERTOS_HZ=1000
+CONFIG_LWIP_TCP_SND_BUF_DEFAULT=17440
+CONFIG_LWIP_TCP_WND_DEFAULT=17440
+CONFIG_LWIP_TCPIP_TASK_AFFINITY_CPU1=y

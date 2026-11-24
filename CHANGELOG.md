@@ -1,5 +1,18 @@
 # Moonshiner ESP32 - Changelog
 
+## 2026-11-24: Native ESP-IDF migration, v2.0 - STABLE ✅
+
+- Full port from ESPHome to native ESP-IDF 6.0.1 in the repository root; ESPHome firmware preserved on `esphome-legacy` / `v1.09-esphome-final`
+- Web UI, 14-tool MCP server, REST/SSE API, Basic Auth, Bearer auth, DS18B20, heater/valves/buzzer and SH1106 OLED all ported
+- Resumable OTA (`/api/ota`, `tools/ota_push.js`) plus `/api/reboot` and automatic reboot after `?commit=1` — no manual power cycling needed
+- **Root cause of periodic reboots**: stack overflow in the 2 KB `sse_beat` heartbeat task (nested SSE frame buffers). Stack raised to 8 KB; reset reason and panic text are now exposed in `GET /diag` via `esp_reset_reason()` and a panic-handler wrapper
+- **Stale HTTP sessions** exhausted heap and stalled large responses: `lru_purge_enable=true` and non-blocking SSE sends fix it
+- **OLED**: exact ESPHome SH1106 settings copied (`0x8D/0x14` charge pump — `0xAD/0x8B` is SH1107), I²C control byte `0x00` added to commands, 100 kHz bus, contrast 0xFF
+- **Sensors**: DS18B20 resolution reduced to 10-bit (187 ms) so conversion cannot outrun the interrupt watchdog
+- Verified: UI suites green, MCP 96/96, `tools/contract_test.js --live-write` 7/7, >3 min stable uptime, valves and OLED confirmed working on hardware
+
+---
+
 ## 2026-10-03: On-device MCP server (firmware), v1.09 - STABLE ✅
 
 ### New: `components/mcp_server/` — MCP built into the ESP32

@@ -1,6 +1,6 @@
 # Moonshiner ESP32
 
-ESPHome-based distillation controller for reflux and pot stills. Runs on an ESP32 with hysteresis-based column temperature control, safety shutdowns, OLED display, and a custom mobile-first web UI.
+Native ESP-IDF distillation controller for reflux and pot stills. Runs on an ESP32 with hysteresis-based column temperature control, safety shutdowns, OLED display, a custom mobile-first web UI and an on-device MCP server. The last ESPHome firmware is preserved on the `esphome-legacy` branch and in the `v1.09-esphome-final` release.
 
 ## Features
 
@@ -21,9 +21,9 @@ ESPHome-based distillation controller for reflux and pot stills. Runs on an ESP3
 | Component | Specification |
 |-----------|--------------|
 | Board | ESP32 DevKit (esp32dev) |
-| Framework | ESP-IDF 5.5.5 |
-| Column Sensor | DS18B20 (12-bit, address `0x043C01F096B22428`) |
-| Tank Sensor | DS18B20 (12-bit, address `0xBF14D0231E64FF28`) |
+| Framework | ESP-IDF 6.0.1 (native, no ESPHome runtime) |
+| Column Sensor | DS18B20 (10-bit, address `0x043C01F096B22428`) |
+| Tank Sensor | DS18B20 (10-bit, address `0xBF14D0231E64FF28`) |
 | Display | SH1106 128x64 OLED, I2C (sold as "SSD1306") |
 | Heater SSR | Solid-state relay, zero-cross |
 | Valves | 2× solenoid valves (normally closed) |
@@ -52,7 +52,7 @@ GPIO33 → Buzzer (LEDC RTTTL)
 
 ## Web UI
 
-Custom single-page application served via ESPHome web_server v3 on port 80.
+Custom single-page application served by the firmware's own `esp_http_server` on port 80, with HTTP Basic Auth. `moonshiner_ui_v24.js` is embedded as a precompressed gzip blob at build time.
 
 **Controls:**
 - Heater Power (0–2750 W) with Working Power (1575W) and Preheat (2750W) markers
@@ -75,23 +75,18 @@ Custom single-page application served via ESPHome web_server v3 on port 80.
 
 ## Configuration
 
-The entire system is configured in a single file: `moonshiner_esp32.yaml`.
+Copy `main/credentials.h.example` to `main/credentials.h` (gitignored) and fill in WiFi, AP, web Basic Auth and MCP Bearer token. The old `secrets.yaml` is no longer used by the firmware; it is kept only as the source for the one-time migration and for `esphome upload` during cutover.
 
-A `secrets.yaml` file (gitignored) must exist with:
-```yaml
-wifi_ssid: "..."
-wifi_password: "..."
-ap_password: "..."
-ota_password: "..."
-api_encryption_key: "..."   # native API encryption
-web_username: "..."         # web_server basic auth
-web_password: "..."
-mcp_api_key: "..."          # Bearer token for the on-device MCP server
+### Build
+
+The host has no `idf.py` or docker CLI. Build inside the `esp-idf-moonshiner` container via the docker-socket helper:
+
+```bash
+./tools/deploy.sh                 # builds build/moonshiner.bin
+./tools/deploy.sh --ota            # builds, then pushes over /api/ota
 ```
 
-### ESPHome Version
-
-Built with ESPHome `2026.8.x` (Docker `esphome/esphome:latest`). The JS frontend (`moonshiner_ui_v24.js`) is embedded in the firmware binary at compile time — any change requires a full recompile.
+The container exports `IDF_TARGET=esp32` and mounts this repository at `/project`.
 
 ## Testing
 
@@ -116,9 +111,9 @@ cd mcp-moonshiner && npm install && npm test    # 96 tests
 
 The still exposes a **Model Context Protocol** server so LLM agents can inspect and control distillation with 14 tools (`read_temperatures`, `get_status`, `get_entity`, `set_target_temp`, `set_heater_power`, `set_valve_high/low`, `toggle_reduction`, `restart_process`, …). There are two interchangeable implementations:
 
-### On-device (primary) — `components/mcp_server/`
+### On-device (primary) — `main/mcp_server.cpp`
 
-An ESPHome external component compiled **into the ESP32 firmware** itself: a stateless Streamable HTTP MCP server — no PC, NAS, or Node.js required.
+A stateless Streamable HTTP MCP server compiled **into the native ESP-IDF firmware** itself — no PC, NAS, or Node.js required.
 
 ```bash
 curl http://192.168.22.231:8080/mcp \
@@ -140,25 +135,33 @@ TypeScript MCP server over stdio, same 14 tools, talking to the ESP32 web_server
 ## Repository Layout
 
 ```
-moonshiner_esp32.yaml   # the single ESPHome config (esp-idf framework)
-moonshiner_ui_v24.js    # custom frontend, embedded at compile time
-secrets.yaml            # gitignored, see list above
-components/mcp_server/  # on-device MCP server (C++, port 8080 /mcp)
+CMakeLists.txt          # native ESP-IDF project root
+partitions.csv          # two OTA app slots, copied from the ESPHome firmware
+sdkconfig.defaults      # esp32 target, sockets, watchdog, rollback
+main/                   # firmware sources (state, web, MCP, control, sensors, display, OTA)
+main/credentials.h      # gitignored WiFi/web/MCP secrets
+tools/                  # deploy.sh, embed_web.py, ota_push.py, control_sim.cpp
+moonshiner_ui_v24.js    # frontend, embedded as gzip at build time
+components/mcp_server/  # legacy ESPHome MCP component (reference only)
 mcp-moonshiner/         # Node MCP fallback (TypeScript, stdio)
 tests.js / test_*.js    # JSDOM UI test suites
-esp32_logs.sh           # safe log viewer wrapper (sweeps stale log sessions)
+docs/esphome-legacy.md  # backup branch/tag and firmware hash
 AGENTS.md               # conventions and gotchas for coding agents
-CHANGELOG.md            # release history (latest: v1.09)
+CHANGELOG.md            # release history
 ```
 
 ## Deployment
 
-Build and upload via Docker on a build server:
-
 ```bash
-docker exec esphome esphome compile moonshiner_esp32.yaml
-docker exec esphome esphome upload moonshiner_esp32.yaml --device <ESP32_IP>
+./tools/deploy.sh                 # idf build inside esp-idf-moonshiner
+./tools/deploy.sh --ota            # build + push via /api/ota (Basic Auth from ESP32_USER/ESP32_PASS)
 ```
+
+The first cutover from ESPHome used `esphome upload --file build/moonshiner.bin --device 192.168.22.231 --ota-password "$OTA_PASSWORD"`; the two app slots use the same layout in both firmwares.
+
+### Diagnostics
+
+`GET http://192.168.22.231:8080/diag` (MCP port, no auth) reports uptime, free heap, boot counter, the reset reason and the last panic report captured from the handler in RTC memory. This is the first place to look if the device reboots: a `panic` reason with `abort=... A stack overflow in task ...` identifies the offending task directly.
 
 ## Control Logic
 
@@ -175,12 +178,18 @@ docker exec esphome esphome upload moonshiner_esp32.yaml --device <ESP32_IP>
 
 ## Rollback
 
+The previous native image is kept in the unused OTA slot. A bad update reverts
+automatically unless it passes the 60-second health check. To force a rollback
+to the saved ESPHome image, push its release asset through `/api/ota`:
+
 ```bash
-git checkout v1.07        # or any earlier tag (see `git tag -l`)
-# sync files to build server
-rsync -av moonshiner_esp32.yaml moonshiner_ui_v24.js user@server:/path/to/config/
-# build and upload
+curl -u "$ESP32_USER:$ESP32_PASS" \
+  -o esphome-v1.09-final.bin \
+  https://github.com/zavaruev/moonshiner-esp32/releases/download/v1.09-esphome-final/esphome-v1.09-final.bin
+ESP32_USER=... ESP32_PASS=... tools/ota_push.py esphome-v1.09-final.bin http://192.168.22.231
 ```
+
+Git reference: `esphome-legacy` branch / `v1.09-esphome-final` tag.
 
 ---
 

@@ -13,7 +13,7 @@ opencode.json             # MCP config: remote device MCP + disabled stdio fallb
 CHANGELOG.md / AGENTS.md / IMPROVEMENTS.md
 ```
 
-- **ESPHome version**: `2026.9.1` (Docker container `esphome/esphome:latest`, verified 2026-10-01; check `esphome version` in container if unsure)
+- **ESPHome version**: `2026.10.0` (Docker container `esphome/esphome:latest`, verified 2026-10-23; check `esphome version` in container if unsure)
 - **Board**: ESP32 dev (esp32dev)
 - **Framework**: **esp-idf** (v5.5.5; if ESPHome raises the default, update the version in the yaml)
 
